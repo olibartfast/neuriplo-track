@@ -9,8 +9,7 @@ static const std::string params = "{ help h   |   | print help message }"
       "{ type     |  yolov5x | mobilenet, svm, yolov4-tiny, yolov4, yolov5s, yolov5x}"
       "{ link l   |   | capture video from ip camera}"
       "{ labels lb   |  ../labels | path to class labels file}"
-      "{ model_path mp   |  ../models | path to models}"
-      "{ min_confidence | 0.25   | min confidence}";
+      "{ model_path mp   |  ../models | path to models}";
 
 
 std::vector<TrackingBox> convertBbox(std::vector<t_prediction>& detection_results, 
@@ -77,9 +76,9 @@ std::unique_ptr<Detector> createDetector(
     if(detectorType.find("yolov5") != std::string::npos)  
     {
         std::string modelBinary;
-        classes = readLabelNames(labelsPath + "/" + "coco.names"); 
-        std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, "",  detectorType + ".onnx");    
-        return std::make_unique<YoloV5>(classes, "", modelBinary);
+        classes = readLabelNames(labelsPath); 
+        //std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath);    
+        return std::make_unique<YoloV5>(classes, "", modelPath);
     }
     return nullptr;
 }      
@@ -97,11 +96,11 @@ int main(int argc, char** argv) {
     const std::string labelsPath = parser.get<std::string>("labels");
     const std::string detectorType = parser.get<std::string>("type");
 
-    std::vector<std::string> classes;
+    std::vector<std::string> classes = readLabelNames(labelsPath);
     std::vector<std::string> track_classes{"person", "car"};
 
     // Open video file
-    cv::VideoCapture cap("video.mp4");
+    cv::VideoCapture cap(parser.get<std::string>("link"));
     std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, modelPath); 
     Sort sort = Sort();
 
@@ -136,7 +135,7 @@ int main(int argc, char** argv) {
             float y_max = detection_result.y + detection_result.height;
 
             cv::rectangle(frame, cv::Point(x_min, y_min), cv::Point(x_max, y_max), cv::Scalar(255,255,255), 2, 8, 0);
-            cv::putText(frame, classes[detection_result.class_index], cv::Point(x_min, y_min-15), cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(255, 255, 255), 2, 8, 0);
+            cv::putText(frame, classes[detection_result.class_index], cv::Point(x_min + detection_result.width/2, y_min-15), cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(255, 255, 255), 2, 8, 0);
         }
 
         // show tracking box in color

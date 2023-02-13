@@ -8,7 +8,7 @@ YoloV5::YoloV5(
     size_t network_width,
     size_t network_height    
 ) : 
-    net_ {cv::dnn::readNet(modelBinary)}, 
+    net_ {cv::dnn::readNetFromONNX(modelBinary)}, 
     Detector{classNames, 
     modelConfiguration, modelBinary, confidenceThreshold,
     network_width,
