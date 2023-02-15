@@ -16,13 +16,8 @@ double get_iou(cv::Rect_<float> bb_test, cv::Rect_<float> bb_gt)
     return (double)(in / un);
 }
 
-std::vector<TrackingBox> Sort::getTrackingBoxes()
-{
-    return m_tracking_output;
-}
-
 // Update the state vector with observed bounding box.
-void Sort::track(std::vector<TrackingBox>& detect_frame_data)
+std::vector<TrackingBox> Sort::track(std::vector<TrackingBox>& detect_frame_data)
 {
     m_frame_count += 1;
 
@@ -32,7 +27,7 @@ void Sort::track(std::vector<TrackingBox>& detect_frame_data)
             KalmanTracker track = KalmanTracker(detect_frame_data[i].box);
             m_trackers.push_back(track);
         }
-        return;
+        return std::vector<TrackingBox>{};
     }
 
     ///////////////////////////////////////
@@ -141,6 +136,6 @@ void Sort::track(std::vector<TrackingBox>& detect_frame_data)
         if (it != m_trackers.end() && (*it).m_time_since_update > m_max_age)
             it = m_trackers.erase(it);
     }
-
+    return m_tracking_output;
 }
 

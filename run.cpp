@@ -118,8 +118,7 @@ int main(int argc, char** argv) {
         // Run multi-object tracker on frame
         std::vector<t_prediction> detections = detector->run_detection(frame);
         auto detection_frame_data = convertBbox(detections, classes, track_classes);
-        tracker->track(detection_frame_data);
-        auto tracksOutput =  tracker->getTrackingBoxes();
+        auto tracksOutput = tracker->track(detection_frame_data);
 
         // show detection box in white
         for(auto detection_result : detections) 

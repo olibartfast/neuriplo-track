@@ -31,16 +31,12 @@ public:
 
     ~Sort() {}
 
-    void track(std::vector<TrackingBox>& detFrameData) override;
-    std::vector<TrackingBox> getTrackingBoxes() override;
-
-
-    std::vector<TrackingBox> m_tracking_output;
-
+    std::vector<TrackingBox>  track(std::vector<TrackingBox>& detFrameData) override;
 private:
     int m_max_age; //  maximum number of consecutive frames that an object can go undetected before it is considered to have left the scene. 
     int m_min_hits; // minimum number of times that an object must be detected before it is considered to be a valid track
     double m_iou_threshold;
     int m_frame_count;
     std::vector<KalmanTracker> m_trackers;
+    std::vector<TrackingBox> m_tracking_output;
 };

@@ -14,15 +14,7 @@ struct TrackingBox
 
 class Tracker {
 public:
-  virtual void track(std::vector<TrackingBox>& detFrameData) = 0;
-  virtual std::vector<TrackingBox> getTrackingBoxes() = 0;
+  virtual std::vector<TrackingBox> track(std::vector<TrackingBox>& detFrameData) = 0;
   virtual ~Tracker() = default;
-
- // Rule of Five implementation
-//   Tracker() = default; 
-//   Tracker(const Tracker& other) = default; 
-//   Tracker& operator=(const Tracker& other) = default; 
-//   Tracker(Tracker&& other) = default; 
-//   Tracker& operator=(Tracker&& other) = default; 
 
 };
