@@ -56,17 +56,6 @@ std::vector<std::string> readLabelNames(const std::string& fileName)
     return classes;   
 }
 
-auto modelSetup(const std::string& modelPath, const std::string& configName, const std::string& weigthName){
-    const auto modelConfiguration = modelPath + "/" + configName;
-    const auto modelBinary = modelPath + "/" + weigthName;
-    if(!std::filesystem::exists(modelConfiguration) || !std::filesystem::exists(modelBinary))
-    {
-        std::cerr << "Wrong path to model " << std::endl;
-        exit(1);
-    }
-    return std::make_tuple(modelConfiguration, modelBinary); 
-}
-
 std::unique_ptr<Detector> createDetector(
     const std::string& detectorType,
     const std::string& labelsPath,
