@@ -6,9 +6,10 @@
 #include "Sort.hpp"
 
 static const std::string params = "{ help h   |   | print help message }"
-      "{ type     |  yolov5x | mobilenet, svm, yolov4-tiny, yolov4, yolov5s, yolov5x}"
+      "{ detector     |  yolov5x | mobilenet, svm, yolov4-tiny, yolov4, yolov5s, yolov5x | detector model}"
       "{ link l   |   | capture video from ip camera}"
       "{ labels lb   |  ../labels | path to class labels file}"
+      "{ tracker tr   |  SORT | tracking algorithm}"
       "{ model_path mp   |  ../models | path to models}";
 
 
@@ -76,12 +77,21 @@ std::unique_ptr<Detector> createDetector(
     if(detectorType.find("yolov5") != std::string::npos)  
     {
         std::string modelBinary;
-        classes = readLabelNames(labelsPath); 
-        //std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath);    
+        classes = readLabelNames(labelsPath);   
         return std::make_unique<YoloV5>(classes, "", modelPath);
     }
     return nullptr;
-}      
+}     
+
+std::unique_ptr<Tracker> createTracker(const std::string& trackingAlgorithm)
+{
+    if(trackingAlgorithm.find("SORT") != std::string::npos)  
+    {   
+        auto sortTracker = std::make_unique<Sort>();
+        return sortTracker;
+    }     
+    return nullptr;
+}
 
 int main(int argc, char** argv) {
 
@@ -94,7 +104,8 @@ int main(int argc, char** argv) {
 
     const std::string modelPath = parser.get<std::string>("model_path");
     const std::string labelsPath = parser.get<std::string>("labels");
-    const std::string detectorType = parser.get<std::string>("type");
+    const std::string detectorType = parser.get<std::string>("detector");
+    const std::string trackingAlgorithm = parser.get<std::string>("tracker");
 
     std::vector<std::string> classes = readLabelNames(labelsPath);
     std::vector<std::string> track_classes{"person", "car"};
@@ -102,22 +113,18 @@ int main(int argc, char** argv) {
     // Open video file
     cv::VideoCapture cap(parser.get<std::string>("link"));
     std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, modelPath); 
-    Sort sort = Sort();
+    std::unique_ptr<Tracker> tracker = createTracker(trackingAlgorithm);
 
     // Process video frames
-    while (cap.isOpened()) 
+    cv::Mat frame;
+    while (cap.read(frame)) 
     {
-        cv::Mat frame;
-        cap >> frame;
-
-        if (frame.empty())
-            break;
 
         // Run multi-object tracker on frame
         std::vector<t_prediction> detections = detector->run_detection(frame);
         auto detection_frame_data = convertBbox(detections, classes, track_classes);
-        sort.update(detection_frame_data);
-        auto tracksOutput =  sort.m_tracking_output;
+        tracker->track(detection_frame_data);
+        auto tracksOutput =  tracker->getTrackingBoxes();
 
         // randomly generate colors, only for display
         cv::RNG rng(0xFFFFFFFF);

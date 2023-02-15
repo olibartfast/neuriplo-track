@@ -16,8 +16,13 @@ double get_iou(cv::Rect_<float> bb_test, cv::Rect_<float> bb_gt)
     return (double)(in / un);
 }
 
+std::vector<TrackingBox> Sort::getTrackingBoxes()
+{
+    return m_tracking_output;
+}
+
 // Update the state vector with observed bounding box.
-void Sort::update(std::vector<TrackingBox>& detect_frame_data)
+void Sort::track(std::vector<TrackingBox>& detect_frame_data)
 {
     m_frame_count += 1;
 
