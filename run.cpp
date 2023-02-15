@@ -115,6 +115,12 @@ int main(int argc, char** argv) {
     std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, modelPath); 
     std::unique_ptr<Tracker> tracker = createTracker(trackingAlgorithm);
 
+    // randomly generate colors, only for display
+    cv::RNG rng(0xFFFFFFFF);
+    cv::Scalar_<int> randColor[20];
+    for (int i = 0; i < 20; i++)
+        rng.fill(randColor[i], cv::RNG::UNIFORM, 0, 256);
+
     // Process video frames
     cv::Mat frame;
     while (cap.read(frame)) 
@@ -126,23 +132,11 @@ int main(int argc, char** argv) {
         tracker->track(detection_frame_data);
         auto tracksOutput =  tracker->getTrackingBoxes();
 
-        // randomly generate colors, only for display
-        cv::RNG rng(0xFFFFFFFF);
-        cv::Scalar_<int> randColor[20];
-        for (int i = 0; i < 20; i++)
-            rng.fill(randColor[i], cv::RNG::UNIFORM, 0, 256);
-
         // show detection box in white
         for(auto detection_result : detections) 
         {
-            // change box to (xmin,ymin,xmax,ymax) format
-            float x_min = detection_result.x;
-            float y_min = detection_result.y;
-            float x_max = detection_result.x + detection_result.width;
-            float y_max = detection_result.y + detection_result.height;
-
-            cv::rectangle(frame, cv::Point(x_min, y_min), cv::Point(x_max, y_max), cv::Scalar(255,255,255), 2, 8, 0);
-            cv::putText(frame, classes[detection_result.class_index], cv::Point(x_min + detection_result.width/2, y_min-15), cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(255, 255, 255), 2, 8, 0);
+            cv::rectangle(frame, cv::Rect(detection_result.x, detection_result.y, detection_result.width, detection_result.height), cv::Scalar(255,255,255), 2, 8, 0);
+            cv::putText(frame, classes[detection_result.class_index], cv::Point(detection_result.x + detection_result.width/2, detection_result.y-15), cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(255, 255, 255), 2, 8, 0);
         }
 
         // show tracking box in color
