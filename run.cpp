@@ -1,9 +1,9 @@
 #include <iostream>
 #include <vector>
 #include <opencv2/opencv.hpp>
-#include "YoloV5.hpp"
-#include "KalmanTracker.hpp"
-#include "Sort.hpp"
+#include "YoloV5/YoloV5.hpp"
+#include "SORT/KalmanTracker.hpp"
+#include "SORT/Sort.hpp"
 
 static const std::string params = "{ help h   |   | print help message }"
       "{ detector     |  yolov5x | mobilenet, svm, yolov4-tiny, yolov4, yolov5s, yolov5x | detector model}"
@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
     const std::string trackingAlgorithm = parser.get<std::string>("tracker");
 
     std::vector<std::string> classes = readLabelNames(labelsPath);
-    std::vector<std::string> track_classes{"person", "car"};
+    std::vector<std::string> track_classes{"person"};
 
     // Open video file
     cv::VideoCapture cap(parser.get<std::string>("link"));
