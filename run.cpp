@@ -10,6 +10,7 @@ static const std::string params = "{ help h   |   | print help message }"
       "{ link l   |   | capture video from ip camera}"
       "{ labels lb   |  ../labels | path to class labels file}"
       "{ tracker tr   |  SORT | tracking algorithm}"
+      "{ class cl   |  car | class from coco dataset to track}"
       "{ model_path mp   |  ../models | path to models}";
 
 
@@ -95,14 +96,19 @@ int main(int argc, char** argv) {
     const std::string labelsPath = parser.get<std::string>("labels");
     const std::string detectorType = parser.get<std::string>("detector");
     const std::string trackingAlgorithm = parser.get<std::string>("tracker");
+    const std::string classToTrack = parser.get<std::string>("class");
+    const std::vector<std::string> track_classes = {classToTrack};
 
     std::vector<std::string> classes = readLabelNames(labelsPath);
-    std::vector<std::string> track_classes{"person"};
+
 
     // Open video file
     cv::VideoCapture cap(parser.get<std::string>("link"));
     std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, modelPath); 
     std::unique_ptr<Tracker> tracker = createTracker(trackingAlgorithm);
+
+    if(!detector || !tracker)
+        std::exit(1);
 
     // randomly generate colors, only for display
     cv::RNG rng(0xFFFFFFFF);
@@ -133,7 +139,7 @@ int main(int argc, char** argv) {
             cv::putText(frame, std::to_string(tb.id), cv::Point(tb.box.x, tb.box.y-15), cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(255, 255, 255), 2, 8, 0);
         }
         
-        cv::imshow("SORT", frame);
+        cv::imshow(trackingAlgorithm, frame);
         cv::waitKey(1);
 
     }
