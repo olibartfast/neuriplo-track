@@ -7,7 +7,7 @@ Opencv, Yolov5 exported to onnx using Pytorch v1.11.
 
 ### To Run
 ```
-./multi_object_tracking --link=<path to video or stream> --labels=<path to label file> --model_path=<path to model binary>
+./multi_object_tracking --link=<path to video or stream> --labels=<path to label file> --model_path=<path to model binary> --class=<class to track>
 ```
 
 # reference
