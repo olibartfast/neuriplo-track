@@ -17,8 +17,12 @@ double get_iou(cv::Rect_<float> bb_test, cv::Rect_<float> bb_gt)
 }
 
 // Update the state vector with observed bounding box.
-std::vector<TrackingBox> Sort::track(std::vector<TrackingBox>& detect_frame_data)
+std::vector<TrackingBox> Sort::track(const std::vector<t_prediction>& detection_results, 
+    const std::vector<std::string>& classes, 
+    const std::vector<std::string>& track_classes)
 {
+    std::vector<TrackingBox> detect_frame_data = convertBbox(detection_results, classes, track_classes);
+
     m_frame_count += 1;
 
     if (m_trackers.size() == 0) { // the first frame met

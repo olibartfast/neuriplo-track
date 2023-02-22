@@ -31,7 +31,9 @@ public:
 
     ~Sort() {}
 
-    std::vector<TrackingBox>  track(std::vector<TrackingBox>& detFrameData) override;
+    std::vector<TrackingBox>  track(const std::vector<t_prediction>& detection_results, 
+    const std::vector<std::string>& classes, 
+    const std::vector<std::string>& track_classes) override;
 private:
     int m_max_age; //  maximum number of consecutive frames that an object can go undetected before it is considered to have left the scene. 
     int m_min_hits; // minimum number of times that an object must be detected before it is considered to be a valid track
