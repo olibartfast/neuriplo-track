@@ -12,3 +12,6 @@ Opencv, Yolov5 exported to onnx using Pytorch v1.11.
 
 # reference
 https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tracking/cpp_inference/yoloSort
+
+### TO DO
+to try other trackers (i.e MHR, Online Multi-Object Tracking (OMOT), Joint Probabilistic Data Association (JPDA), Sequential Monte Carlo (SMC), Adaptive Background Mixture Model (ABM))?
