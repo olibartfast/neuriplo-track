@@ -73,7 +73,7 @@ cv::Rect YoloV5::get_rect(const cv::Size& imgSize, const std::vector<float>& bbo
     return cv::Rect(round(l), round(t), round(r - l), round(b - t));
 }
 
-std::vector<t_prediction> YoloV5::run_detection(const cv::Mat& frame){    
+std::vector<Detection> YoloV5::run_detection(const cv::Mat& frame){    
     cv::Mat inputBlob = preprocess_img(frame);
     cv::dnn::blobFromImage(inputBlob, inputBlob, 1 / 255.F, cv::Size(), cv::Scalar(), true, false);
     std::vector<cv::Mat> outs;
@@ -126,10 +126,10 @@ std::vector<t_prediction> YoloV5::run_detection(const cv::Mat& frame){
     // Perform Non Maximum Suppression and draw predictions.
     std::vector<int> indices;
     cv::dnn::NMSBoxes(boxes, confidences, score_threshold_, nms_threshold_, indices);
-    std::vector<t_prediction> detections;
+    std::vector<Detection> detections;
     for (int i = 0; i < indices.size(); i++) 
     {
-        t_prediction det;
+        Detection det;
         int idx = indices[i];
         det.class_index = classIds[idx];
         det.x = boxes[idx].x;

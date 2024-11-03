@@ -2,15 +2,16 @@
 #include <vector>
 #include <opencv2/opencv.hpp>
 #include "YoloV5/YoloV5.hpp"
-#include "SORT/KalmanTracker.hpp"
-#include "SORT/Sort.hpp"
+#include "SortWrapper.hpp"
+
+
 
 static const std::string params = "{ help h   |   | print help message }"
       "{ detector     |  yolov5x | mobilenet, svm, yolov4-tiny, yolov4, yolov5s, yolov5x | detector model}"
       "{ link l   |   | capture video from ip camera}"
       "{ labels lb   |  ../labels | path to class labels file}"
       "{ tracker tr   |  SORT | tracking algorithm}"
-      "{ class cl   |  car | class from coco dataset to track}"
+      "{ class cl   |  2 | class id from coco dataset to track}"
       "{ model_path mp   |  ../models | path to models}";
 
 
@@ -45,12 +46,11 @@ std::unique_ptr<Detector> createDetector(
     return nullptr;
 }     
 
-std::unique_ptr<Tracker> createTracker(const std::string& trackingAlgorithm)
+std::unique_ptr<BaseTracker> createTracker(const std::string& trackingAlgorithm, const std::set<int>& classes_to_track)
 {
     if(trackingAlgorithm.find("SORT") != std::string::npos)  
     {   
-        auto sortTracker = std::make_unique<Sort>();
-        return sortTracker;
+        return std::make_unique<SortWrapper>(classes_to_track);
     }     
     return nullptr;
 }
@@ -68,16 +68,19 @@ int main(int argc, char** argv) {
     const std::string labelsPath = parser.get<std::string>("labels");
     const std::string detectorType = parser.get<std::string>("detector");
     const std::string trackingAlgorithm = parser.get<std::string>("tracker");
-    const std::string classToTrack = parser.get<std::string>("class");
-    const std::vector<std::string> track_classes = {classToTrack};
-
+    const int classToTrack = parser.get<int>("class");
+        
+    // Specify the class IDs to track, e.g., {1, 2} for classes "person" and "car"
+    std::set<int> classes_to_track = {classToTrack};
+    
+    
     std::vector<std::string> classes = readLabelNames(labelsPath);
 
 
     // Open video file
     cv::VideoCapture cap(parser.get<std::string>("link"));
     std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, modelPath); 
-    std::unique_ptr<Tracker> tracker = createTracker(trackingAlgorithm);
+    std::unique_ptr<BaseTracker> tracker = createTracker(trackingAlgorithm, classes_to_track);
 
     if(!detector || !tracker)
         std::exit(1);
@@ -94,8 +97,9 @@ int main(int argc, char** argv) {
     {
 
         // Run multi-object tracker on frame
-        std::vector<t_prediction> detections = detector->run_detection(frame);
-        auto tracksOutput = tracker->track(detections, classes, track_classes);
+        std::vector<Detection> detections = detector->run_detection(frame);
+        auto tracksOutput = tracker->update(detections);
+
 
         // show detection box in white
         for(auto detection_result : detections) 
@@ -106,8 +110,8 @@ int main(int argc, char** argv) {
 
         // show tracking box in color
         for (auto tb : tracksOutput) {
-            cv::rectangle(frame, tb.box, randColor[tb.id % 20], 2, 8, 0);
-            cv::putText(frame, std::to_string(tb.id), cv::Point(tb.box.x, tb.box.y-15), cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(255, 255, 255), 2, 8, 0);
+            cv::rectangle(frame, cv::Rect(tb.x, tb.y, tb.width, tb.height), randColor[tb.track_id % 20], 4, 8, 0);
+            cv::putText(frame, std::to_string(tb.track_id), cv::Point(tb.x, tb.y-15), cv::FONT_HERSHEY_PLAIN, 2, randColor[tb.track_id % 20], 4, 8, 0);
         }
         
         cv::imshow(trackingAlgorithm, frame);

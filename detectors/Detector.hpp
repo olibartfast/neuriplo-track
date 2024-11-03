@@ -11,15 +11,7 @@
 #include <ctime>
 #include <filesystem>
 
-struct t_prediction
-{
-    float x;
-    float y;
-    float width;
-    float height;
-    float confidence;
-    int class_index;
-};
+#include "Detection.hpp"
 
 class Detector{
 protected:	
@@ -67,6 +59,6 @@ public:
 
 	}
 
-    virtual std::vector<t_prediction> run_detection(const cv::Mat& frame) = 0;
+    virtual std::vector<Detection> run_detection(const cv::Mat& frame) = 0;
 
 };

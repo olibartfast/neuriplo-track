@@ -2,7 +2,9 @@
 // Sort.h: SORT(Simple Online and Realtime Tracking) Class Declaration
 //
 #pragma once
-#include "Tracker.hpp"
+#include <vector>
+#include <opencv2/core/types.hpp>
+#include "Detector.hpp"
 #include "opencv2/video/tracking.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "Hungarian.hpp"
@@ -10,8 +12,16 @@
 #include <set>
 #include <iomanip> // to format image names using setw() and setfill()
 
+// definition of a tracking bbox
+struct TrackingBox
+{
+    int id;
+    cv::Rect_<float> box;
+};
+
+
 // This class represents the internel state of individual tracked objects observed as bounding box.
-class Sort : public Tracker{
+class Sort{
 public:
     Sort()
     {
@@ -31,9 +41,7 @@ public:
 
     ~Sort() {}
 
-    std::vector<TrackingBox>  track(const std::vector<t_prediction>& detection_results, 
-    const std::vector<std::string>& classes, 
-    const std::vector<std::string>& track_classes) override;
+    std::vector<TrackingBox> update(const std::vector<TrackingBox>& detect_frame_data);
 private:
     int m_max_age; //  maximum number of consecutive frames that an object can go undetected before it is considered to have left the scene. 
     int m_min_hits; // minimum number of times that an object must be detected before it is considered to be a valid track
