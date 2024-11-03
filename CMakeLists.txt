@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.20)
 project(multi_object_tracking LANGUAGES CXX)
 SET(CMAKE_BUILD_TYPE "Debug")
@@ -21,17 +20,11 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(ByteTrack)
 message(STATUS "ByteTrack: ${bytetrack_SOURCE_DIR}")
 
-
-# Fetch Eigen library into the trackers folder
-FetchContent_Declare(
-  Eigen
-  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-  GIT_TAG 3.4.0  # Replace with the appropriate version tag
-)
-FetchContent_MakeAvailable(Eigen)
+# Use system-installed Eigen
+find_package(Eigen3  REQUIRED)
 
 # Confirm paths for ByteTrack and Eigen
-message(STATUS "Eigen: ${eigen_SOURCE_DIR}")
+message(STATUS "Using system-installed Eigen3: ${EIGEN3_INCLUDE_DIR}")
 
 # Set source files for YOLOv5 and SORT
 set(YOLOV5_SRC detectors/YoloV5/YoloV5.cpp)
@@ -51,7 +44,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   detectors
   trackers/SORT
   ${bytetrack_SOURCE_DIR}/include
-  ${eigen_SOURCE_DIR}
+  ${EIGEN3_INCLUDE_DIR}
 )
 
 # Link libraries (OpenCV, standard C++ libraries, etc.)
