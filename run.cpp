@@ -3,6 +3,7 @@
 #include <opencv2/opencv.hpp>
 #include "YoloV5/YoloV5.hpp"
 #include "SortWrapper.hpp"
+#include "ByteTrackWrapper.hpp"
 
 
 
@@ -52,6 +53,10 @@ std::unique_ptr<BaseTracker> createTracker(const std::string& trackingAlgorithm,
     {   
         return std::make_unique<SortWrapper>(classes_to_track);
     }     
+    if(trackingAlgorithm.find("ByteTrack") != std::string::npos)  
+    {   
+        return std::make_unique<ByteTrackWrapper>(classes_to_track);
+    }
     return nullptr;
 }
 

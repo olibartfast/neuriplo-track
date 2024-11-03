@@ -11,6 +11,7 @@
             "program": "/home/oli/repos/multi_object_tracking/build/multi_object_tracking",
             "args": ["--link=/home/oli/Videos/driving.mp4",
              "--labels=/home/oli/repos/multi_object_tracking/coco.names",
+             "--tracker=ByteTrack",
             "--model_path=/home/oli/repos/yolov5/yolov5s.onnx", "--class=2"],
             "cwd": "${workspaceFolder}"
         }
