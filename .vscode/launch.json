@@ -1,0 +1,18 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "C/C++: g++ build and debug active file",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/oli/repos/multi_object_tracking/build/multi_object_tracking",
+            "args": ["--link=/home/oli/Videos/driving.mp4",
+             "--labels=/home/oli/repos/multi_object_tracking/coco.names",
+            "--model_path=/home/oli/repos/yolov5/yolov5s.onnx", "--class=2"],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
