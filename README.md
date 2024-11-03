@@ -3,7 +3,7 @@
 Repo created to test multiobject trackers, starting with SORT and ByteTrack with code based on references below.
 
 ## Dependencies
-Opencv, basic Yolov5 exported to onnx for detection task.
+Opencv, Eigen3,  basic Yolov5 exported to onnx for detection task.
 
 ### To run
 ```
