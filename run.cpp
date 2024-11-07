@@ -13,9 +13,12 @@ static const std::string params = "{ help h   |   | print help message }"
       "{ labels lb   |  ../labels | path to class labels file}"
       "{ tracker tr   |  SORT | tracking algorithm}"
       "{ class cl   |  2 | class id from coco dataset to track}"
-      "{ model_path mp   |  ../models | path to models}";
-
-
+      "{ model_path mp   |  ../models | path to models}"
+      "{ tracker_config tc   |  config/tracker.ini | path to tracker config file}"
+      "{ gmc_config gc   |  config/gmc.ini | path to gmc config file}"
+      "{ reid_config rc   |  config/reid.ini | path to reid config file}"
+      "{ reid_onnx ro   |  models/reid.onnx | path to reid onnx file}";
+  
 
 std::vector<std::string> readLabelNames(const std::string& fileName)
 {
@@ -46,25 +49,23 @@ std::unique_ptr<Detector> createDetector(
     }
     return nullptr;
 }     
-
-std::unique_ptr<BaseTracker> createTracker(const std::string& trackingAlgorithm, const std::set<int>& classes_to_track)
+std::unique_ptr<BaseTracker> createTracker(const std::string& trackingAlgorithm, const TrackConfig& config)
 {
-    if(trackingAlgorithm.find("BoTSORT") != std::string::npos)  
+    if(trackingAlgorithm == "BoTSORT")  
     {   
-        return std::make_unique<BotSORTWrapper>(classes_to_track);
+        return std::make_unique<BoTSORTWrapper>(config);
     }
-    else if(trackingAlgorithm.find("SORT") != std::string::npos)  
+    else if(trackingAlgorithm == "SORT")  
     {   
-        return std::make_unique<SortWrapper>(classes_to_track);
+        return std::make_unique<SortWrapper>(config);
     }     
-    else if(trackingAlgorithm.find("ByteTrack") != std::string::npos)  
+    else if(trackingAlgorithm == "ByteTrack")  
     {   
-        return std::make_unique<ByteTrackWrapper>(classes_to_track);
+        return std::make_unique<ByteTrackWrapper>(config);
     }
 
     return nullptr;
 }
-
 int main(int argc, char** argv) {
 
     cv::CommandLineParser parser(argc, argv, params);
@@ -79,6 +80,11 @@ int main(int argc, char** argv) {
     const std::string detectorType = parser.get<std::string>("detector");
     const std::string trackingAlgorithm = parser.get<std::string>("tracker");
     const int classToTrack = parser.get<int>("class");
+
+    const std::string trackerConfigPath = parser.get<std::string>("tracker_config");
+    const std::string gmcConfigPath = parser.get<std::string>("gmc_config");
+    const std::string reidConfigPath = parser.get<std::string>("reid_config");
+    const std::string reidOnnxPath = parser.get<std::string>("reid_onnx");   
         
     // Specify the class IDs to track, e.g., {1, 2} for classes "person" and "car"
     std::set<int> classes_to_track = {classToTrack};
@@ -90,7 +96,8 @@ int main(int argc, char** argv) {
     // Open video file
     cv::VideoCapture cap(parser.get<std::string>("link"));
     std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, modelPath); 
-    std::unique_ptr<BaseTracker> tracker = createTracker(trackingAlgorithm, classes_to_track);
+    TrackConfig config(classes_to_track, trackerConfigPath, gmcConfigPath, reidConfigPath, reidOnnxPath);
+    std::unique_ptr<BaseTracker> tracker = createTracker(trackingAlgorithm, config);
 
     if(!detector || !tracker)
         std::exit(1);
