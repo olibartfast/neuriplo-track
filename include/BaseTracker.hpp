@@ -3,8 +3,7 @@
 #include <opencv2/core/types.hpp>
 #include "Detection.hpp"
 #include "TrackedObject.hpp"
-
-
+#include "TrackConfig.hpp"
 
 class BaseTracker {
 public:

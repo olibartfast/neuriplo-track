@@ -2,15 +2,34 @@
 #include "BoTSORT.h"
 
 
-class BotSORTWrapper : public BaseTracker {
+// struct BoTSORTConfig : public TrackConfig {
+//     std::string tracker_config_path;
+//     std::string gmc_config_path;
+//     std::string reid_config_path;
+//     std::string reid_onnx_model_path;
+
+//     BoTSORTConfig(const std::set<int>& classes = {}, 
+//                   const std::string& trackerPath = "config/tracker.ini", 
+//                   const std::string& gmcPath = "config/gmc.ini", 
+//                   const std::string& reidPath = "config/reid.ini", 
+//                   const std::string& onnxPath = "")
+//         : TrackConfig(classes), 
+//           tracker_config_path(trackerPath), 
+//           gmc_config_path(gmcPath), 
+//           reid_config_path(reidPath), 
+//           reid_onnx_model_path(onnxPath) {}
+// };
+
+class BoTSORTWrapper : public BaseTracker {
 private:
     botsort::BoTSORT tracker;
     std::set<int> classes_to_track; 
 
 public:
-    BotSORTWrapper(const std::set<int>& classes_to_track) : 
-    classes_to_track(classes_to_track), 
-    tracker("", "","","") {}  // TO IMPROVE
+    BoTSORTWrapper(const TrackConfig& config)
+        : classes_to_track(config.classes_to_track),
+          tracker(config.tracker_config_path, config.gmc_config_path, config.reid_config_path, config.reid_onnx_model_path) 
+    {}
 
     std::vector<TrackedObject> update(const std::vector<Detection>& detections, const cv::Mat& frame = cv::Mat()) override {
         // Convert tracking results back to TrackedObject format

@@ -6,12 +6,18 @@
 
 
 
+// struct ByteTrackConfig : public TrackConfig {
+//     // Add ByteTrack-specific configurations if any
+//     ByteTrackConfig(const std::set<int>& classes = {})
+//         : TrackConfig(classes) {}
+// };
+
 class ByteTrackWrapper : public BaseTracker {
 private:
     byte_track::BYTETracker tracker;
     std::set<int> classes_to_track;
 public:
-    ByteTrackWrapper(const std::set<int>& classes_to_track) : classes_to_track{classes_to_track} {}
+    ByteTrackWrapper(const TrackConfig& config) : classes_to_track(config.classes_to_track) {}
 
 
     std::vector<byte_track::Object> convertBbox(const std::vector<Detection>& detection_results)

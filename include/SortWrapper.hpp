@@ -4,13 +4,18 @@
 #include "Detection.hpp"
 #include "TrackedObject.hpp"
 
+// struct SORTConfig : public TrackConfig {
+//     // Add SORT-specific configurations if any
+//     SORTConfig(const std::set<int>& classes = {})
+//         : TrackConfig(classes) {}
+// };
 
 class SortWrapper : public BaseTracker {
 private:
     Sort tracker;
     std::set<int> classes_to_track;
 public:
-    SortWrapper(const std::set<int>& classes_to_track) : classes_to_track{classes_to_track} {}
+    SortWrapper(const TrackConfig& config) : classes_to_track(config.classes_to_track) {}
 
     std::vector<TrackedObject> update(const std::vector<Detection>& detections, const cv::Mat& frame = cv::Mat()) override {
         // Convert Detection to ByteTrack's format if needed and use the update method
