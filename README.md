@@ -1,6 +1,6 @@
 # Multi-Object Tracking
 
-Repo created to test multiobject trackers, starting with SORT and ByteTrack with code based on references below.
+Repo created to wrap and test multiobject trackers, starting with SORT, ByteTrack and BoTSORT with code based on references below.
 
 ## Dependencies
 Opencv, Eigen3,  basic Yolov5 exported to onnx for detection task.
@@ -13,6 +13,7 @@ Opencv, Eigen3,  basic Yolov5 exported to onnx for detection task.
 # References
 * Sort Tracker: https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tracking/cpp_inference/yoloSort
 * ByteTrack: https://github.com/Vertical-Beach/ByteTrack-cpp
+* BoTSORT: https://github.com/viplix3/BoTSORT-cpp
 
 ### TO DO
  try other tracker libraries or custom porting/implementation 
