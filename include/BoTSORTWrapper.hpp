@@ -5,12 +5,12 @@
 class BotSORTWrapper : public BaseTracker {
 private:
     botsort::BoTSORT tracker;
-    std::set<int> classes_to_track;  // Added missing member variable
+    std::set<int> classes_to_track; 
 
 public:
     BotSORTWrapper(const std::set<int>& classes_to_track) : 
     classes_to_track(classes_to_track), 
-    tracker("", "","","") {}  // Fixed initializer syntax
+    tracker("", "","","") {}  // TO IMPROVE
 
     std::vector<TrackedObject> update(const std::vector<Detection>& detections, const cv::Mat& frame = cv::Mat()) override {
         // Convert tracking results back to TrackedObject format
