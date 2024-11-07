@@ -44,7 +44,7 @@ public:
         return byte_track_objects;
     }    
 
-    std::vector<TrackedObject> update(const std::vector<Detection>& detections) override {
+    std::vector<TrackedObject> update(const std::vector<Detection>& detections, const cv::Mat &frame = cv::Mat()) override {
         // Convert Detection to ByteTrack's format if needed and use the update method
         const auto detections_byteTrack = convertBbox(detections);
        const auto byteTrackResults = tracker.update(detections_byteTrack);

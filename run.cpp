@@ -4,7 +4,7 @@
 #include "YoloV5/YoloV5.hpp"
 #include "SortWrapper.hpp"
 #include "ByteTrackWrapper.hpp"
-
+#include "BoTSORTWrapper.hpp"
 
 
 static const std::string params = "{ help h   |   | print help message }"
@@ -53,9 +53,13 @@ std::unique_ptr<BaseTracker> createTracker(const std::string& trackingAlgorithm,
     {   
         return std::make_unique<SortWrapper>(classes_to_track);
     }     
-    if(trackingAlgorithm.find("ByteTrack") != std::string::npos)  
+    else if(trackingAlgorithm.find("ByteTrack") != std::string::npos)  
     {   
         return std::make_unique<ByteTrackWrapper>(classes_to_track);
+    }
+    else if(trackingAlgorithm.find("BoTSORT") != std::string::npos)  
+    {   
+        return std::make_unique<BotSORTWrapper>(classes_to_track);
     }
     return nullptr;
 }
@@ -103,7 +107,7 @@ int main(int argc, char** argv) {
 
         // Run multi-object tracker on frame
         std::vector<Detection> detections = detector->run_detection(frame);
-        auto tracksOutput = tracker->update(detections);
+        auto tracksOutput = tracker->update(detections, frame);
 
 
         // show detection box in white

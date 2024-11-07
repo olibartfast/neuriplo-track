@@ -12,7 +12,7 @@ private:
 public:
     SortWrapper(const std::set<int>& classes_to_track) : classes_to_track{classes_to_track} {}
 
-    std::vector<TrackedObject> update(const std::vector<Detection>& detections) override {
+    std::vector<TrackedObject> update(const std::vector<Detection>& detections, const cv::Mat& frame = cv::Mat()) override {
         // Convert Detection to ByteTrack's format if needed and use the update method
 
         std::vector<TrackingBox> detection_frame_data = convertBbox(detections);

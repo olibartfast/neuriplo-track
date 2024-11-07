@@ -9,6 +9,6 @@
 class BaseTracker {
 public:
     virtual ~BaseTracker() = default;
-    virtual std::vector<TrackedObject> update(const std::vector<Detection>& detections) = 0;
+    virtual std::vector<TrackedObject> update(const std::vector<Detection>& detections, const cv::Mat &frame = cv::Mat()) = 0;
 };
 
