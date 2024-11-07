@@ -1,13 +1,13 @@
 # Multi-Object Tracking
 
-Repo created to wrap and test multiobject trackers, starting with SORT and ByteTrack with code based on references below.
+Repo created to wrap and test multiobject trackers, starting with SORT, BoTSORT and ByteTrack with code based on references below.
 
 ## Dependencies
 Opencv, Eigen3,  basic Yolov5 exported to onnx for detection task.
 
 ### To run
 ```
-./multi_object_tracking --link=<path to video or stream> --tracker=<tracking algorithm i.e. "SORT", "ByteTrack"> --labels=<path to label file> --model_path=<path to model binary> --class=<id of class to track> 
+./multi_object_tracking --link=<path to video or stream> --tracker=<tracking algorithm i.e. "SORT", "ByteTrack", "BoTSORT"> --labels=<path to label file> --model_path=<path to model binary> --class=<id of class to track> 
 ```
 
 # References

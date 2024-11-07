@@ -5,7 +5,32 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "C/C++: g++ build and debug active file",
+            "name": "BoTSORT",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/oli/repos/multi_object_tracking/build/multi_object_tracking",
+            "args": ["--link=/home/oli/Videos/driving.mp4",
+             "--labels=/home/oli/repos/multi_object_tracking/coco.names",
+             "--tracker=BoTSORT",
+             "--tracker_config=trackers/BoTSORT/config/tracker.ini",
+            "--gmc_config=trackers/BoTSORT/config/gmc.ini",
+            "--reid_config=trackers/BoTSORT/config/reid.ini",
+            "--model_path=/home/oli/repos/yolov5/yolov5s.onnx", "--class=2"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "SORT",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/oli/repos/multi_object_tracking/build/multi_object_tracking",
+            "args": ["--link=/home/oli/Videos/driving.mp4",
+             "--labels=/home/oli/repos/multi_object_tracking/coco.names",
+             "--tracker=SORT",
+            "--model_path=/home/oli/repos/yolov5/yolov5s.onnx", "--class=2"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "ByteTrack",
             "type": "cppdbg",
             "request": "launch",
             "program": "/home/oli/repos/multi_object_tracking/build/multi_object_tracking",
@@ -14,6 +39,6 @@
              "--tracker=ByteTrack",
             "--model_path=/home/oli/repos/yolov5/yolov5s.onnx", "--class=2"],
             "cwd": "${workspaceFolder}"
-        }
+        }                    
     ]
 }
