@@ -49,7 +49,11 @@ std::unique_ptr<Detector> createDetector(
 
 std::unique_ptr<BaseTracker> createTracker(const std::string& trackingAlgorithm, const std::set<int>& classes_to_track)
 {
-    if(trackingAlgorithm.find("SORT") != std::string::npos)  
+    if(trackingAlgorithm.find("BoTSORT") != std::string::npos)  
+    {   
+        return std::make_unique<BotSORTWrapper>(classes_to_track);
+    }
+    else if(trackingAlgorithm.find("SORT") != std::string::npos)  
     {   
         return std::make_unique<SortWrapper>(classes_to_track);
     }     
@@ -57,10 +61,7 @@ std::unique_ptr<BaseTracker> createTracker(const std::string& trackingAlgorithm,
     {   
         return std::make_unique<ByteTrackWrapper>(classes_to_track);
     }
-    else if(trackingAlgorithm.find("BoTSORT") != std::string::npos)  
-    {   
-        return std::make_unique<BotSORTWrapper>(classes_to_track);
-    }
+
     return nullptr;
 }
 
