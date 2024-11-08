@@ -42,19 +42,13 @@ public:
         std::vector<TrackingBox> detection_frame_data;
         for(auto detection_result : detection_results) {
 
-            if (classes_to_track.find(detection_result.class_index) == classes_to_track.end()) {
+            if (classes_to_track.find(detection_result.label) == classes_to_track.end()) {
                 continue;
             }
 
-            // change box to (xmin,ymin,xmax,ymax) format
-            float x_min = detection_result.x;
-            float y_min = detection_result.y;
-            float x_max = detection_result.x + detection_result.width;
-            float y_max = detection_result.y + detection_result.height;
-
             TrackingBox tb;
-            tb.id = detection_result.class_index;
-            tb.box = cv::Rect_<float>(cv::Point_<float>(x_min, y_min), cv::Point_<float>(x_max, y_max));
+            tb.id = detection_result.label;
+            tb.box = cv::Rect_<float>(detection_result.bbox);
             detection_frame_data.push_back(tb);
         }
 

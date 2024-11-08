@@ -59,20 +59,16 @@ public:
         std::vector<botsort::Detection> botsort_detections;
         
         for(const auto& detection_result : detection_results) {  // Added const reference
-            if (classes_to_track.find(detection_result.class_index) == classes_to_track.end()) {
+            if (classes_to_track.find(detection_result.label) == classes_to_track.end()) {
                 continue;
             }
 
-            // Change box to (xmin,ymin,xmax,ymax) format
-            float x_min = detection_result.x;
-            float y_min = detection_result.y;
-            float x_max = detection_result.x + detection_result.width;
-            float y_max = detection_result.y + detection_result.height;
+
 
             botsort::Detection botsort_detection;
-            botsort_detection.bbox_tlwh = cv::Rect_<float>(cv::Point_<float>(x_min, y_min), cv::Point_<float>(x_max, y_max));
-            botsort_detection.class_id = detection_result.class_index;
-            botsort_detection.confidence = detection_result.confidence;
+            botsort_detection.bbox_tlwh = detection_result.bbox;
+            botsort_detection.class_id = detection_result.label;
+            botsort_detection.confidence = detection_result.score;
 
             botsort_detections.push_back(botsort_detection);    
         }

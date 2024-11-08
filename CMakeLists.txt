@@ -7,9 +7,13 @@ SET(CMAKE_BUILD_TYPE "Debug")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(OpenCV REQUIRED)
+find_package(glog REQUIRED)
 # Use system-installed Eigen
 find_package(Eigen3 REQUIRED)
 
+
+# needed by reid model
 # Set ONNX Runtime paths based on local installation
 set(ONNXRUNTIME_DIR "$ENV{HOME}/onnxruntime-linux-x64-gpu-1.19.2")
 set(ONNXRUNTIME_INCLUDE_DIRS "${ONNXRUNTIME_DIR}/include")
@@ -36,8 +40,19 @@ find_library(ONNXRUNTIME_GPU_LIBRARY
     REQUIRED
 )
 
+
 message(STATUS "Found ONNX Runtime: ${ONNXRUNTIME_LIBRARY}")
 message(STATUS "Found ONNX Runtime GPU: ${ONNXRUNTIME_GPU_LIBRARY}")
+
+include(FetchContent)
+FetchContent_Declare(
+object-detection-inference
+GIT_REPOSITORY https://github.com/olibartfast/object-detection-inference.git
+GIT_TAG        master  # or the specific tag/branch you want to use
+)
+FetchContent_MakeAvailable(object-detection-inference)
+message(STATUS "object-detection-inference_SOURCE_DIR module path: ${object-detection-inference_SOURCE_DIR}")
+
 
 # Fetch ByteTrack repository
 include(FetchContent)
@@ -62,13 +77,10 @@ set(SORT_SRC
 )
 file(GLOB_RECURSE BOTSORT_SRC "trackers/BoTSORT/src/*.cpp")
 
-# Find OpenCV
-find_package(OpenCV REQUIRED)
 
 # Add the executable for the main application
 add_executable(${PROJECT_NAME} 
     run.cpp 
-    ${YOLOV5_SRC} 
     ${SORT_SRC} 
     ${BOTSORT_SRC}
 )
@@ -79,7 +91,13 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${ONNXRUNTIME_INCLUDE_DIRS}
     include
     src
-    detectors
+    ${object-detection-inference_SOURCE_DIR}/detectors/inc
+    ${object-detection-inference_SOURCE_DIR}/detectors/src/
+    ${object-detection-inference_SOURCE_DIR}/detectors/src/models   
+    ${object-detection-inference_SOURCE_DIR}/common  
+    ${GLOG_INCLUDE_DIRS}
+    ${InferenceEngines_SOURCE_DIR}/backends
+    ${InferenceEngines_SOURCE_DIR}/backends/src
     trackers/SORT
     trackers/BoTSORT/include
     ${bytetrack_SOURCE_DIR}/include
@@ -88,9 +106,13 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 # Link libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    ${OpenCV_LIBRARIES}
+    glog::glog
+    ${OpenCV_LIBS}
+    detectors
+    InferenceEngines
     ${ONNXRUNTIME_LIBRARY}
     ${ONNXRUNTIME_GPU_LIBRARY}
+    detectors
     bytetrack
     Eigen3::Eigen
     -lstdc++

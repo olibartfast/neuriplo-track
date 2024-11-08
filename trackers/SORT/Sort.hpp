@@ -4,7 +4,6 @@
 #pragma once
 #include <vector>
 #include <opencv2/core/types.hpp>
-#include "Detector.hpp"
 #include "opencv2/video/tracking.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "Hungarian.hpp"

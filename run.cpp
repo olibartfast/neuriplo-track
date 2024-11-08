@@ -1,14 +1,17 @@
 #include <iostream>
 #include <vector>
 #include <opencv2/opencv.hpp>
-#include "YoloV5/YoloV5.hpp"
 #include "SortWrapper.hpp"
 #include "ByteTrackWrapper.hpp"
 #include "BoTSORTWrapper.hpp"
 
+#include "DetectorSetup.hpp"
+#include "InferenceBackendSetup.hpp"
+#include "Detector.hpp"
+
 
 static const std::string params = "{ help h   |   | print help message }"
-      "{ detector     |  yolov5x | mobilenet, svm, yolov4-tiny, yolov4, yolov5s, yolov5x | detector model}"
+      "{ detector     |  yolov5 | detector model}"
       "{ link l   |   | capture video from ip camera}"
       "{ labels lb   |  ../labels | path to class labels file}"
       "{ tracker tr   |  SORT | tracking algorithm}"
@@ -33,22 +36,7 @@ std::vector<std::string> readLabelNames(const std::string& fileName)
     classes.push_back(line);
     return classes;   
 }
-
-std::unique_ptr<Detector> createDetector(
-    const std::string& detectorType,
-    const std::string& labelsPath,
-    const std::string& modelPath){
-    std::vector<std::string> classes; 
-    std::string modelConfiguration; 
-    std::string modelBinary;   
-    if(detectorType.find("yolov5") != std::string::npos)  
-    {
-        std::string modelBinary;
-        classes = readLabelNames(labelsPath);   
-        return std::make_unique<YoloV5>(classes, "", modelPath);
-    }
-    return nullptr;
-}     
+   
 std::unique_ptr<BaseTracker> createTracker(const std::string& trackingAlgorithm, const TrackConfig& config)
 {
     if(trackingAlgorithm == "BoTSORT")  
@@ -95,7 +83,13 @@ int main(int argc, char** argv) {
 
     // Open video file
     cv::VideoCapture cap(parser.get<std::string>("link"));
-    std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, modelPath); 
+    const auto detector =  DetectorSetup::createDetector(detectorType);
+
+    const auto engine = setup_inference_engine(modelPath, "", false);
+    if (!engine) {
+        throw std::runtime_error("Can't setup an inference engine for " + modelPath);
+    }    
+
     TrackConfig config(classes_to_track, trackerConfigPath, gmcConfigPath, reidConfigPath, reidOnnxPath);
     std::unique_ptr<BaseTracker> tracker = createTracker(trackingAlgorithm, config);
 
@@ -113,16 +107,17 @@ int main(int argc, char** argv) {
     while (cap.read(frame)) 
     {
 
-        // Run multi-object tracker on frame
-        std::vector<Detection> detections = detector->run_detection(frame);
+        const auto input_blob = detector->preprocess_image(frame);
+        const auto [outputs, shapes] = engine->get_infer_results(input_blob);
+        std::vector<Detection> detections = detector->postprocess(outputs, shapes, frame.size());
         auto tracksOutput = tracker->update(detections, frame);
 
 
         // show detection box in white
         for(auto detection_result : detections) 
         {
-            cv::rectangle(frame, cv::Rect(detection_result.x, detection_result.y, detection_result.width, detection_result.height), cv::Scalar(255,255,255), 2, 8, 0);
-            cv::putText(frame, classes[detection_result.class_index], cv::Point(detection_result.x + detection_result.width/2, detection_result.y-15), cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(255, 255, 255), 2, 8, 0);
+            cv::rectangle(frame, detection_result.bbox, cv::Scalar(255,255,255), 2, 8, 0);
+            cv::putText(frame, classes[detection_result.label], cv::Point(detection_result.bbox.x + detection_result.bbox.width/2, detection_result.bbox.y-15), cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(255, 255, 255), 2, 8, 0);
         }
 
         // show tracking box in color
