@@ -4,7 +4,7 @@ Repo created to wrap and test multiobject trackers, starting with SORT, BoTSORT 
 
 ## Dependencies
 ### Core
-Opencv, Eigen3
+Opencv, Eigen3, glog
 ### Fetched
 [Object Detection Inference Library](https://github.com/olibartfast/object-detection-inference)
 ```
