@@ -1,6 +1,6 @@
 # Multi-Object Tracking
 
-This repository is designed to wrap and test multiple object trackers, beginning with SORT, BoTSORT, and ByteTrack. The core code is adapted from the referenced implementations below. ByteTrack is integrated directly using the `FetchContent` command in `CMakeLists`. For the BoTSORT project, the original ReID TensorRT model inference backend has been replaced with an ONNX Runtime implementation.
+This repository is designed to wrap and test [multi-object trackers](https://paperswithcode.com/task/multi-object-tracking), beginning with SORT, BoTSORT, and ByteTrack. The core code is adapted from the referenced implementations below. ByteTrack is integrated directly using the `FetchContent` command in `CMakeLists`. For the BoTSORT project, the original ReID TensorRT model inference backend has been replaced with an ONNX Runtime implementation.
 
 ## Dependencies
 
