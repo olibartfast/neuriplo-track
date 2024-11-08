@@ -11,7 +11,7 @@ This repository is designed to wrap and test multiple object trackers, beginning
 - ONNX Runtime (for BoTSORT Re-Identification)
 
 ### Fetched
-- [Object Detection Inference Library](https://github.com/olibartfast/object-detection-inference) for object detection:
+- [Object Detection Inference Library](https://github.com/olibartfast/object-detection-inference) for object detection(which itself contains the [Inference Engines Library](https://github.com/olibartfast/object-detection-inference)):
 
 ```cmake
 include(FetchContent)
