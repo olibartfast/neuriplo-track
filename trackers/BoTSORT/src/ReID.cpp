@@ -14,11 +14,61 @@ ReIDModel::ReIDModel(const std::string &config_path, const std::string &onnx_mod
 }
 
 void ReIDModel::_initialize_onnx_session(const std::string &model_path) {
-    try {
+   
         // Configure session options
         _session_options.SetIntraOpNumThreads(1);
         _session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
 
+
+        std::vector<std::string> available_providers = Ort::GetAvailableProviders();
+        bool provider_set = false;
+
+         
+            // Try to add CUDA provider if available
+        for (const auto& provider : available_providers) 
+        {
+            if (!provider_set && provider.find("CUDA") != std::string::npos) 
+            {
+                try
+                {
+                    OrtCUDAProviderOptions cuda_options;
+                    _session_options.AppendExecutionProvider_CUDA(cuda_options);  // Use GPU 0
+                    provider_set = true;
+                    std::cout << "CUDA execution provider set successfully." << std::endl;
+                    break;
+                }
+                catch (const Ort::Exception& e) 
+                {
+                    std::cerr << "ONNX Runtime error: " << e.what() << std::endl;
+                    continue;
+                }                 
+            } 
+
+            // Try to add TensorRT provider if CUDA wasn't added and TensorRT is available
+            else if (!provider_set && provider.find("Tensorrt") != std::string::npos) 
+            {
+                try{
+                    OrtTensorRTProviderOptions trt_options;
+                    _session_options.AppendExecutionProvider_TensorRT(trt_options);
+                    provider_set = true;
+                    std::cout << "TensorRT execution provider set successfully." << std::endl;
+                    break;
+                }
+                catch (const Ort::Exception& e) 
+                {
+                    std::cerr << "ONNX Runtime error: " << e.what() << std::endl;
+                    continue;
+                }  
+ 
+            }
+         
+        }
+          
+        // If neither CUDA nor TensorRT is available, fall back to CPU
+        if (!provider_set) {
+            _session_options = Ort::SessionOptions();
+            std::cout << "Using CPU execution provider." << std::endl;
+        }
         // Create session
         _session = std::make_unique<Ort::Session>(_env, model_path.c_str(), _session_options);
 
@@ -29,10 +79,8 @@ void ReIDModel::_initialize_onnx_session(const std::string &model_path) {
         Ort::AllocatedStringPtr input_name_ptr = _session->GetInputNameAllocated(0, allocator);
         Ort::AllocatedStringPtr output_name_ptr = _session->GetOutputNameAllocated(0, allocator);
         
-        //_input_node_names.push_back(input_name_ptr.get());
-         _input_node_names.emplace_back(_session->GetInputNameAllocated(0, allocator).get());
-       // _output_node_names.push_back(output_name_ptr.get());
-        _output_node_names.emplace_back(_session->GetOutputNameAllocated(0, allocator).get());
+        _input_node_names.push_back(input_name_ptr.get());
+        _output_node_names.push_back(output_name_ptr.get());
 
         // Get input shape
         auto input_shape = _session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
@@ -45,10 +93,7 @@ void ReIDModel::_initialize_onnx_session(const std::string &model_path) {
         }
         _input_tensor_values.resize(input_tensor_size);
 
-    } catch (const Ort::Exception& e) {
-        std::cerr << "ONNX Runtime error: " << e.what() << std::endl;
-        throw;
-    }
+
 }
 
 
