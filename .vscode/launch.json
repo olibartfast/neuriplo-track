@@ -15,7 +15,8 @@
              "--tracker_config=trackers/BoTSORT/config/tracker.ini",
             "--gmc_config=trackers/BoTSORT/config/gmc.ini",
             "--reid_config=trackers/BoTSORT/config/reid.ini",
-            "--model_path=/home/oli/repos/yolov5/yolov5s.onnx", "--class=2"],
+            "--reid_onnx=trackers/BoTSORT/models/osnet_x0_25_market1501.onnx",
+            "--model_path=/home/oli/repos/yolov5/yolov5s.onnx", "--class=0"],
             "cwd": "${workspaceFolder}"
         },
         {
