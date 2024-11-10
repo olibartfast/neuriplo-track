@@ -16,9 +16,17 @@ GIT_TAG        master  # or the specific tag/branch you want to use
 )
 FetchContent_MakeAvailable(object-detection-inference)
 ```
-### To run
+
+### Build
 ```
-./multi_object_tracking --link=<path to video or stream> --tracker=<tracking algorithm i.e. "SORT", "ByteTrack", "BoTSORT"> --labels=<path to label file> --model_path=<path to model binary> --class=<id of class to track> 
+cd multi_object_tracking
+rm -rf build
+cmake -B build -DDEFAULT_BACKEND=ONNX_RUNTIME  -DUSE_GSTREAMER=OFF
+cmake --build build --config Release
+```
+### Run
+```
+./multi_object_tracking --link=<path to video or stream> --tracker=<tracking algorithm i.e. "SORT", "ByteTrack", "BoTSORT"> --labels=<path to label file> --model_path=<path to model binary> --class=<list of classes label name to track> 
 ```
 * Check [.vscode folder for examples](.vscode/launch.json)
 # References

@@ -11,11 +11,11 @@
 
 
 static const std::string params = "{ help h   |   | print help message }"
-      "{ detector     |  yolov5 | detector model}"
+      "{ detector_type     |  yolov5 | detector model}"
       "{ link l   |   | capture video from ip camera}"
       "{ labels lb   |  ../labels | path to class labels file}"
       "{ tracker tr   |  SORT | tracking algorithm}"
-      "{ class cl   |  2 | class id from coco dataset to track}"
+      "{ classes cl   |  car, person | classes label name from coco dataset to track}"
       "{ model_path mp   |  ../models | path to models}"
       "{ tracker_config tc   |  config/tracker.ini | path to tracker config file}"
       "{ gmc_config gc   |  config/gmc.ini | path to gmc config file}"
@@ -35,6 +35,65 @@ std::vector<std::string> readLabelNames(const std::string& fileName)
     while (getline(ifs, line))
     classes.push_back(line);
     return classes;   
+}
+
+std::vector<std::string> splitString(const std::string& s, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(s);
+    while (std::getline(tokenStream, token, delimiter)) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
+std::set<int> mapClassesToIds(const std::vector<std::string>& classesToTrack, const std::vector<std::string>& allClasses) {
+    std::set<int> classIds;
+    for (const auto& classToTrack : classesToTrack) {
+        auto it = std::find(allClasses.begin(), allClasses.end(), classToTrack);
+        if (it != allClasses.end()) {
+            classIds.insert(std::distance(allClasses.begin(), it));
+        } else {
+            std::cerr << "Warning: Class '" << classToTrack << "' not found in labels file." << std::endl;
+        }
+    }
+    return classIds;
+}
+
+std::string generateOutputPath(const std::string& inputPath) {
+    std::filesystem::path inputFilePath(inputPath);
+    if (inputFilePath.extension().empty()) {
+        return "output_processed.mp4";
+    }
+    return inputFilePath.stem().string() + "_processed" + inputFilePath.extension().string();
+}
+
+cv::VideoWriter setupVideoWriter(const cv::VideoCapture& cap, const std::string& outputPath) {
+    cv::Size frame_size(
+        static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH)),
+        static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT))
+    );
+    double fps = cap.get(cv::CAP_PROP_FPS);
+    return cv::VideoWriter(outputPath, cv::VideoWriter::fourcc('m', 'p', '4', 'v'), fps, frame_size);
+}
+
+void drawDetections(cv::Mat& frame, const std::vector<Detection>& detections, const std::vector<std::string>& classes) {
+    for (const auto& detection : detections) {
+        cv::rectangle(frame, detection.bbox, cv::Scalar(255,255,255), 2, 8, 0);
+        cv::putText(frame, classes[detection.label], 
+                    cv::Point(detection.bbox.x + detection.bbox.width/2, detection.bbox.y-15), 
+                    cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(255, 255, 255), 2, 8, 0);
+    }
+}
+
+void drawTracks(cv::Mat& frame, const std::vector<TrackedObject>& tracks, const std::vector<cv::Scalar_<int>>& colors) {
+    for (const auto& track : tracks) {
+        cv::rectangle(frame, cv::Rect(track.x, track.y, track.width, track.height), 
+                      colors[track.track_id % colors.size()], 4, 8, 0);
+        cv::putText(frame, std::to_string(track.track_id), 
+                    cv::Point(track.x, track.y-15), cv::FONT_HERSHEY_PLAIN, 2, 
+                    colors[track.track_id % colors.size()], 4, 8, 0);
+    }
 }
    
 std::unique_ptr<BaseTracker> createTracker(const std::string& trackingAlgorithm, const TrackConfig& config)
@@ -65,21 +124,24 @@ int main(int argc, char** argv) {
 
     const std::string modelPath = parser.get<std::string>("model_path");
     const std::string labelsPath = parser.get<std::string>("labels");
-    const std::string detectorType = parser.get<std::string>("detector");
+    const std::string classesToTrackString = parser.get<std::string>("classes");
+    const std::string detectorType = parser.get<std::string>("detector_type");
     const std::string trackingAlgorithm = parser.get<std::string>("tracker");
-    const int classToTrack = parser.get<int>("class");
+
 
     const std::string trackerConfigPath = parser.get<std::string>("tracker_config");
     const std::string gmcConfigPath = parser.get<std::string>("gmc_config");
     const std::string reidConfigPath = parser.get<std::string>("reid_config");
     const std::string reidOnnxPath = parser.get<std::string>("reid_onnx");   
-        
-    // Specify the class IDs to track, e.g., {1, 2} for classes "person" and "car"
-    std::set<int> classes_to_track = {classToTrack};
-    
     
     std::vector<std::string> classes = readLabelNames(labelsPath);
+    std::vector<std::string> classesToTrack = splitString(classesToTrackString, ',');
+    std::set<int> classes_to_track = mapClassesToIds(classesToTrack, classes);
 
+    if (classes_to_track.empty()) {
+        std::cerr << "Error: No valid classes to track." << std::endl;
+        return 1;
+    }
 
     // Open video file
     cv::VideoCapture cap(parser.get<std::string>("link"));
@@ -93,43 +155,31 @@ int main(int argc, char** argv) {
     TrackConfig config(classes_to_track, trackerConfigPath, gmcConfigPath, reidConfigPath, reidOnnxPath);
     std::unique_ptr<BaseTracker> tracker = createTracker(trackingAlgorithm, config);
 
-    if(!detector || !tracker)
-        std::exit(1);
-
-    // randomly generate colors, only for display
+       std::vector<cv::Scalar_<int>> randColors(20);
     cv::RNG rng(0xFFFFFFFF);
-    cv::Scalar_<int> randColor[20];
-    for (int i = 0; i < 20; i++)
-        rng.fill(randColor[i], cv::RNG::UNIFORM, 0, 256);
+    for (auto& color : randColors)
+        rng.fill(color, cv::RNG::UNIFORM, 0, 256);
 
-    // Process video frames
+    std::string outputPath = generateOutputPath(parser.get<std::string>("link"));
+    cv::VideoWriter videoWriter = setupVideoWriter(cap, outputPath);
+
     cv::Mat frame;
-    while (cap.read(frame)) 
-    {
-
+    while (cap.read(frame)) {
         const auto input_blob = detector->preprocess_image(frame);
         const auto [outputs, shapes] = engine->get_infer_results(input_blob);
         std::vector<Detection> detections = detector->postprocess(outputs, shapes, frame.size());
         auto tracksOutput = tracker->update(detections, frame);
 
-
-        // show detection box in white
-        for(auto detection_result : detections) 
-        {
-            cv::rectangle(frame, detection_result.bbox, cv::Scalar(255,255,255), 2, 8, 0);
-            cv::putText(frame, classes[detection_result.label], cv::Point(detection_result.bbox.x + detection_result.bbox.width/2, detection_result.bbox.y-15), cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(255, 255, 255), 2, 8, 0);
-        }
-
-        // show tracking box in color
-        for (auto tb : tracksOutput) {
-            cv::rectangle(frame, cv::Rect(tb.x, tb.y, tb.width, tb.height), randColor[tb.track_id % 20], 4, 8, 0);
-            cv::putText(frame, std::to_string(tb.track_id), cv::Point(tb.x, tb.y-15), cv::FONT_HERSHEY_PLAIN, 2, randColor[tb.track_id % 20], 4, 8, 0);
-        }
+        drawDetections(frame, detections, classes);
+        drawTracks(frame, tracksOutput, randColors);
         
+        videoWriter.write(frame);
         cv::imshow(trackingAlgorithm, frame);
-        cv::waitKey(1);
-
+        if (cv::waitKey(1) == 27) // Exit if ESC key is pressed
+            break;
     }
 
+    videoWriter.release();
     return 0;
 }
+
