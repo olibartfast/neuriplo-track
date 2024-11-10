@@ -8,7 +8,7 @@ This repository is designed to wrap and test [multi-object trackers](https://pap
 - OpenCV
 - Eigen3
 - glog
-- ONNX Runtime (for BoTSORT Re-Identification)
+- ONNX Runtime, for BoTSORT Re-Identification and detection
 
 ### Fetched
 - [Object Detection Inference Library](https://github.com/olibartfast/object-detection-inference) for object detection(which itself contains the [Inference Engines Library](https://github.com/olibartfast/inference-engines)):
