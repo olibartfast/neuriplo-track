@@ -27,7 +27,7 @@ FetchContent_MakeAvailable(object-detection-inference)
 ```bash
 cd multi_object_tracking
 rm -rf build
-cmake -B build -DDEFAULT_BACKEND=ONNX_RUNTIME  -DUSE_GSTREAMER=OFF
+cmake -G ninja -B build -DDEFAULT_BACKEND=ONNX_RUNTIME  -DUSE_GSTREAMER=OFF
 cmake --build build --config Release
 ```
 ### Run
