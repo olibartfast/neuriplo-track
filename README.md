@@ -24,28 +24,16 @@ FetchContent_MakeAvailable(object-detection-inference)
 ```
 
 ### Build
-```
+```bash
 cd multi_object_tracking
 rm -rf build
 cmake -B build -DDEFAULT_BACKEND=ONNX_RUNTIME  -DUSE_GSTREAMER=OFF
 cmake --build build --config Release
 ```
 ### Run
-```
+```bash
 ./multi_object_tracking --link=<path to video or stream> --tracker=<tracking algorithm i.e. "SORT", "ByteTrack", "BoTSORT"> --labels=<path to label file> --model_path=<path to model binary> --class=<list of classes label name to track> 
 ```
-* Check [.vscode folder for examples](.vscode/launch.json)
-# References
-* SORT: https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tracking/cpp_inference/yoloSort
-* ByteTrack: https://github.com/Vertical-Beach/ByteTrack-cpp
-* BoTSORT: https://github.com/viplix3/BoTSORT-cpp
-
-## Running the Tracker
-
-```bash
-./multi_object_tracking --link=<path to video or stream> --tracker=<tracking algorithm i.e., "SORT", "ByteTrack", "BoTSORT"> --labels=<path to label file> --model_path=<path to model binary> --class=<id of class to track>
-```
-
 *For examples, check the [.vscode folder](.vscode/launch.json).*
 
 ## References
