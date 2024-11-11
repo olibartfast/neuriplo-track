@@ -23,14 +23,14 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(object-detection-inference)
 ```
 
-### Build
+## Build
 ```bash
 cd multi_object_tracking
 rm -rf build
 cmake -G ninja -B build -DDEFAULT_BACKEND=ONNX_RUNTIME  -DUSE_GSTREAMER=OFF
 cmake --build build --config Release
 ```
-### Run
+## Run
 ```bash
 ./multi_object_tracking --link=<path to video or stream> --tracker=<tracking algorithm i.e. "SORT", "ByteTrack", "BoTSORT"> --labels=<path to label file> --model_path=<path to model binary> --class=<list of classes label name to track> 
 ```
