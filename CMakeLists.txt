@@ -49,7 +49,7 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/olibartfast/object-detection-inference.git
     GIT_TAG        master
 )
-set(USE_GSTREAMER ON)
+set(USE_GSTREAMER OFF)
 set(DEFAULT_BACKEND "ONNX_RUNTIME")
 FetchContent_MakeAvailable(object-detection-inference)
 message(STATUS "object-detection-inference_SOURCE_DIR module path: ${object-detection-inference_SOURCE_DIR}")
