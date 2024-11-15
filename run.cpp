@@ -147,7 +147,7 @@ int main(int argc, char** argv) {
     cv::VideoCapture cap(parser.get<std::string>("link"));
     const auto detector =  DetectorSetup::createDetector(detectorType);
 
-    const auto engine = setup_inference_engine(modelPath, "", false);
+    const auto engine = setup_inference_engine(modelPath, "", true);
     if (!engine) {
         throw std::runtime_error("Can't setup an inference engine for " + modelPath);
     }    
@@ -174,9 +174,9 @@ int main(int argc, char** argv) {
         drawTracks(frame, tracksOutput, randColors);
         
         videoWriter.write(frame);
-        cv::imshow(trackingAlgorithm, frame);
-        if (cv::waitKey(1) == 27) // Exit if ESC key is pressed
-            break;
+        // cv::imshow(trackingAlgorithm, frame);
+        // if (cv::waitKey(1) == 27) // Exit if ESC key is pressed
+        //     break;
     }
 
     videoWriter.release();

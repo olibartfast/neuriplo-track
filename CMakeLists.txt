@@ -6,8 +6,7 @@ set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build" FORCE)
 
 # Print option values for verification
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "DEFAULT_BACKEND: ${DEFAULT_BACKEND}")
-message(STATUS "USE_GSTREAMER: ${USE_GSTREAMER}")
+
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -50,8 +49,8 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/olibartfast/object-detection-inference.git
     GIT_TAG        master
 )
-set(USE_GSTREAMER ${USE_GSTREAMER})
-set(DEFAULT_BACKEND ${DEFAULT_BACKEND})
+set(USE_GSTREAMER ON)
+set(DEFAULT_BACKEND "ONNX_RUNTIME")
 FetchContent_MakeAvailable(object-detection-inference)
 message(STATUS "object-detection-inference_SOURCE_DIR module path: ${object-detection-inference_SOURCE_DIR}")
 
@@ -71,6 +70,9 @@ endif()
 message(STATUS "ByteTrack: ${bytetrack_SOURCE_DIR}")
 
 message(STATUS "Using system-installed Eigen3: ${EIGEN3_INCLUDE_DIR}")
+
+message(STATUS "DEFAULT_BACKEND: ${DEFAULT_BACKEND}")
+message(STATUS "USE_GSTREAMER: ${USE_GSTREAMER}")
 
 # Set source files
 set(SORT_SRC 

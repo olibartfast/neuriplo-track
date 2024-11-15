@@ -12,88 +12,85 @@ ReIDModel::ReIDModel(const std::string &config_path, const std::string &onnx_mod
     _onnx_model_path = onnx_model_path;
     _initialize_onnx_session(onnx_model_path);
 }
-
 void ReIDModel::_initialize_onnx_session(const std::string &model_path) {
-   
-        // Configure session options
-        _session_options.SetIntraOpNumThreads(1);
-        _session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+    // Configure session options
+    _session_options.SetIntraOpNumThreads(1);
+    _session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
 
+    std::vector<std::string> available_providers = Ort::GetAvailableProviders();
+    bool provider_set = false;
 
-        std::vector<std::string> available_providers = Ort::GetAvailableProviders();
-        bool provider_set = false;
+    // Check if the model file has TensorRT suffix
+    bool is_trt_model = (model_path.find(".trt") != std::string::npos) || 
+                        (model_path.find(".engine") != std::string::npos);
 
-         
-            // Try to add CUDA provider if available
-        for (const auto& provider : available_providers) 
+    // Try to add CUDA provider if available
+    for (const auto& provider : available_providers) 
+    {
+        if (!provider_set && provider.find("CUDA") != std::string::npos) 
         {
-            if (!provider_set && provider.find("CUDA") != std::string::npos) 
+            try
             {
-                try
-                {
-                    OrtCUDAProviderOptions cuda_options;
-                    _session_options.AppendExecutionProvider_CUDA(cuda_options);  // Use GPU 0
-                    provider_set = true;
-                    std::cout << "CUDA execution provider set successfully." << std::endl;
-                    break;
-                }
-                catch (const Ort::Exception& e) 
-                {
-                    std::cerr << "ONNX Runtime error: " << e.what() << std::endl;
-                    continue;
-                }                 
-            } 
-
-            // Try to add TensorRT provider if CUDA wasn't added and TensorRT is available
-            else if (!provider_set && provider.find("Tensorrt") != std::string::npos) 
-            {
-                try{
-                    OrtTensorRTProviderOptions trt_options;
-                    _session_options.AppendExecutionProvider_TensorRT(trt_options);
-                    provider_set = true;
-                    std::cout << "TensorRT execution provider set successfully." << std::endl;
-                    break;
-                }
-                catch (const Ort::Exception& e) 
-                {
-                    std::cerr << "ONNX Runtime error: " << e.what() << std::endl;
-                    continue;
-                }  
- 
+                OrtCUDAProviderOptions cuda_options;
+                _session_options.AppendExecutionProvider_CUDA(cuda_options);  // Use GPU 0
+                provider_set = true;
+                std::cout << "CUDA execution provider set successfully." << std::endl;
+                break;
             }
-         
+            catch (const Ort::Exception& e) 
+            {
+                std::cerr << "ONNX Runtime error: " << e.what() << std::endl;
+                continue;
+            }                 
+        } 
+
+        // Try to add TensorRT provider if CUDA wasn't added, TensorRT is available, and the model is a TensorRT engine
+        else if (!provider_set && provider.find("Tensorrt") != std::string::npos && is_trt_model) 
+        {
+            try {
+                OrtTensorRTProviderOptions trt_options;
+                _session_options.AppendExecutionProvider_TensorRT(trt_options);
+                provider_set = true;
+                std::cout << "TensorRT execution provider set successfully." << std::endl;
+                break;
+            }
+            catch (const Ort::Exception& e) 
+            {
+                std::cerr << "ONNX Runtime error: " << e.what() << std::endl;
+                continue;
+            }  
         }
+    }
           
-        // If neither CUDA nor TensorRT is available, fall back to CPU
-        if (!provider_set) {
-            _session_options = Ort::SessionOptions();
-            std::cout << "Using CPU execution provider." << std::endl;
-        }
-        // Create session
-        _session = std::make_unique<Ort::Session>(_env, model_path.c_str(), _session_options);
+    // If neither CUDA nor TensorRT is available or suitable, fall back to CPU
+    if (!provider_set) {
+        _session_options = Ort::SessionOptions();
+        std::cout << "Using CPU execution provider." << std::endl;
+    }
 
-        // Set input and output names
-        Ort::AllocatorWithDefaultOptions allocator;
-        
-        // Use smart pointers returned by GetInputNameAllocated and GetOutputNameAllocated
-        Ort::AllocatedStringPtr input_name_ptr = _session->GetInputNameAllocated(0, allocator);
-        Ort::AllocatedStringPtr output_name_ptr = _session->GetOutputNameAllocated(0, allocator);
-        
-        _input_node_names.push_back(input_name_ptr.get());
-        _output_node_names.push_back(output_name_ptr.get());
+    // Create session
+    _session = std::make_unique<Ort::Session>(_env, model_path.c_str(), _session_options);
 
-        // Get input shape
-        auto input_shape = _session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
-        _input_tensor_shape = input_shape;
-        
-        // Allocate input tensor memory
-        size_t input_tensor_size = 1;
-        for (auto dim : input_shape) {
-            if (dim > 0) input_tensor_size *= dim;
-        }
-        _input_tensor_values.resize(input_tensor_size);
+    // Set input and output names
+    Ort::AllocatorWithDefaultOptions allocator;
+    
+    // Use smart pointers returned by GetInputNameAllocated and GetOutputNameAllocated
+    Ort::AllocatedStringPtr input_name_ptr = _session->GetInputNameAllocated(0, allocator);
+    Ort::AllocatedStringPtr output_name_ptr = _session->GetOutputNameAllocated(0, allocator);
+    
+    _input_node_names.push_back(input_name_ptr.get());
+    _output_node_names.push_back(output_name_ptr.get());
 
-
+    // Get input shape
+    auto input_shape = _session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
+    _input_tensor_shape = input_shape;
+    
+    // Allocate input tensor memory
+    size_t input_tensor_size = 1;
+    for (auto dim : input_shape) {
+        if (dim > 0) input_tensor_size *= dim;
+    }
+    _input_tensor_values.resize(input_tensor_size);
 }
 
 
