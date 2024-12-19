@@ -4,12 +4,6 @@
 #include "Detection.hpp"
 #include "TrackedObject.hpp"
 
-// struct SORTConfig : public TrackConfig {
-//     // Add SORT-specific configurations if any
-//     SORTConfig(const std::set<int>& classes = {})
-//         : TrackConfig(classes) {}
-// };
-
 class SortWrapper : public BaseTracker {
 private:
     Sort tracker;
