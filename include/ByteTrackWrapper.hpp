@@ -4,14 +4,6 @@
 #include "Detection.hpp"
 #include "TrackedObject.hpp"
 
-
-
-// struct ByteTrackConfig : public TrackConfig {
-//     // Add ByteTrack-specific configurations if any
-//     ByteTrackConfig(const std::set<int>& classes = {})
-//         : TrackConfig(classes) {}
-// };
-
 class ByteTrackWrapper : public BaseTracker {
 private:
     byte_track::BYTETracker tracker;
