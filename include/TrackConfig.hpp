@@ -2,14 +2,6 @@
 #include <set>
 #include <string>
 
-// struct TrackConfig {
-//     std::set<int> classes_to_track;
-
-//     explicit TrackConfig(const std::set<int>& classes = {})
-//         : classes_to_track(classes) {}
-// };
-
-
 struct TrackConfig {
     std::set<int> classes_to_track;
     std::string tracker_config_path;
