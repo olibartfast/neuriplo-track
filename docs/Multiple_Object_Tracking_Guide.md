@@ -4,12 +4,14 @@
 1. [Introduction to Multiple Object Tracking](#introduction)
 2. [MOTChallenge: The Reference Benchmark](#motchallenge)
 3. [Datasets and Benchmarks 2025](#datasets-2025)
-4. [Implemented Tracking Algorithms](#implemented-algorithms)
-5. [C++ System Architecture](#system-architecture)
-6. [Evaluation Metrics](#metrics)
-7. [Technical Challenges](#challenges)
-8. [Practical Usage](#practical-usage)
-9. [Conclusions and Future Developments](#conclusions)
+4. [Evaluation Metrics](#metrics)
+5. [Technical Challenges](#challenges)
+6. [Practical Usage](#practical-usage)
+7. [Conclusions and Future Developments](#conclusions)
+
+## Related Documentation
+- **[Tracking Algorithms Implementation Guide](Tracking_Algorithms.md)** - Detailed implementation of SORT, BoTSORT, and ByteTrack algorithms
+- **[C++ System Architecture Guide](System_Architecture.md)** - System design patterns, data structures, and performance optimization
 
 ---
 
@@ -113,225 +115,7 @@ A benchmark is considered "modern" if it features:
 
 ---
 
-## 4. Implemented Tracking Algorithms {#implemented-algorithms}
-
-The system implements three main tracking algorithms, each with specific characteristics:
-
-### 4.1 SORT (Simple Online and Realtime Tracking)
-
-**Characteristics**:
-- Minimal and fast approach
-- Based on Kalman Filter for prediction
-- Association via Hungarian Algorithm with IoU
-- Ideal for real-time applications
-
-**C++ Implementation**:
-```cpp
-class Sort {
-private:
-    unsigned int max_age;
-    int min_hits;
-    double iouThreshold;
-    std::vector<KalmanTracker> trackers;
-    
-public:
-    std::vector<TrackingBox> update(const std::vector<TrackingBox>& detections);
-};
-```
-
-**Advantages**:
-- High speed
-- Implementation simplicity
-- Low computational requirements
-
-**Limitations**:
-- No Re-ID handling (no appearance features)
-- Problematic with long occlusions
-- Frequent ID switches in complex scenes
-
-### 4.2 BoTSORT (Bootstrapping and Track re-IDentification)
-
-**Characteristics**:
-- Extension of ByteTrack with Re-identification
-- Appearance features for robust association
-- Global Motion Compensation (GMC)
-- Advanced occlusion handling
-
-**C++ Implementation**:
-```cpp
-namespace botsort {
-    class BoTSORT {
-    private:
-        std::vector<std::shared_ptr<Track>> tracked_tracks;
-        std::vector<std::shared_ptr<Track>> lost_tracks;
-        std::shared_ptr<ReID> reid_model;
-        std::unique_ptr<GlobalMotionCompensation> gmc;
-        
-    public:
-        std::vector<std::shared_ptr<Track>> track(
-            const std::vector<Detection>& detections, 
-            const cv::Mat& frame
-        );
-    };
-}
-```
-
-**Key Components**:
-
-1. **Track Class** with state management:
-```cpp
-enum TrackState { New, Tracked, Lost, LongLost, Removed };
-
-class Track {
-    std::vector<float> det_tlwh;
-    std::shared_ptr<FeatureVector> curr_feat;
-    std::unique_ptr<FeatureVector> smooth_feat;
-    KFStateSpaceVec mean;
-    KFStateSpaceMatrix covariance;
-};
-```
-
-2. **Feature Management**:
-```cpp
-void Track::_update_features(const std::shared_ptr<FeatureVector>& feat) {
-    *feat /= feat->norm();
-    if (_feat_history.empty()) {
-        curr_feat = feat;
-        smooth_feat = std::make_unique<FeatureVector>(*curr_feat);
-    } else {
-        *smooth_feat = _alpha * (*smooth_feat) + (1 - _alpha) * (*feat);
-    }
-    // Update feature history
-    _feat_history.push_back(curr_feat);
-    *smooth_feat /= smooth_feat->norm();
-}
-```
-
-**Advantages**:
-- Robust re-identification
-- Advanced occlusion handling
-- Global camera motion compensation
-- High performance on complex datasets
-
-**Limitations**:
-- Higher computational requirements
-- Dependency on pre-trained Re-ID model
-- Implementation complexity
-
-### 4.3 ByteTrack
-
-**Characteristics**:
-- Use of low-confidence detections
-- Hierarchical association (high-conf → low-conf)
-- Robustness to imperfect detections
-- Balance between accuracy and speed
-
-**Integration**:
-```cmake
-FetchContent_Declare(
-    ByteTrack
-    GIT_REPOSITORY https://github.com/Vertical-Beach/ByteTrack-cpp.git
-    GIT_TAG main
-)
-```
-
-**Advantages**:
-- Recovers "lost" tracks with weak detections
-- Robust to noise in detections
-- Competitive performance on MOT17/20
-
----
-
-## 5. C++ System Architecture {#system-architecture}
-
-### 5.1 Design Patterns and Structure
-
-The system uses a **Strategy Pattern** to allow interchangeability of tracking algorithms:
-
-```cpp
-// Base abstract class
-class BaseTracker {
-public:
-    virtual ~BaseTracker() = default;
-    virtual std::vector<TrackedObject> update(
-        const std::vector<Detection>& detections, 
-        const cv::Mat& frame = cv::Mat()
-    ) = 0;
-};
-```
-
-### 5.2 Wrapper Classes
-
-Ogni algoritmo è wrappato in una classe specifica:
-
-```cpp
-class BoTSORTWrapper : public BaseTracker {
-private:
-    botsort::BoTSORT tracker;
-    std::set<int> classes_to_track;
-    
-public:
-    BoTSORTWrapper(const TrackConfig& config);
-    std::vector<TrackedObject> update(
-        const std::vector<Detection>& detections, 
-        const cv::Mat& frame
-    ) override;
-};
-```
-
-### 5.3 Configuration System
-
-```cpp
-struct TrackConfig {
-    std::set<int> classes_to_track;
-    std::string tracker_config_path;
-    std::string gmc_config_path;
-    std::string reid_config_path;
-    std::string reid_onnx_model_path;
-};
-```
-
-### 5.4 Factory Pattern
-
-```cpp
-std::unique_ptr<BaseTracker> createTracker(
-    const std::string& algorithm, 
-    const TrackConfig& config
-) {
-    if (algorithm == "BoTSORT") {
-        return std::make_unique<BoTSORTWrapper>(config);
-    } else if (algorithm == "SORT") {
-        return std::make_unique<SortWrapper>(config);
-    } else if (algorithm == "ByteTrack") {
-        return std::make_unique<ByteTrackWrapper>(config);
-    }
-    return nullptr;
-}
-```
-
-### 5.5 Data Structures
-
-**Detection Input**:
-```cpp
-struct Detection {
-    cv::Rect_<float> bbox_tlwh;
-    float confidence;
-    int class_id;
-    // Optional features for Re-ID
-};
-```
-
-**Tracked Output**:
-```cpp
-struct TrackedObject {
-    int track_id;
-    float x, y, width, height, confidence;
-};
-```
-
----
-
-## 6. Evaluation Metrics {#metrics}
+## 4. Evaluation Metrics {#metrics}
 
 Multiple Object Tracking evaluation uses several complementary metrics to assess different aspects of tracking performance. Understanding these metrics is crucial for proper algorithm evaluation and comparison.
 
@@ -564,7 +348,7 @@ struct TrackingMetrics {
 
 ---
 
-## 7. Technical Challenges {#challenges}
+## 5. Technical Challenges {#challenges}
 
 ### 7.1 Occlusions
 
@@ -577,11 +361,11 @@ struct TrackingMetrics {
 
 ```cpp
 enum TrackState {
-    New = 0,     // Track appena iniziato
-    Tracked,     // Attivamente tracciato
-    Lost,        // Perso temporaneamente
-    LongLost,    // Perso da tempo
-    Removed      // Rimosso definitivamente
+    New = 0,     // Newly created track
+    Tracked,     // Actively tracked
+    Lost,        // Temporarily lost
+    LongLost,    // Lost for extended time
+    Removed      // Permanently removed
 };
 ```
 
@@ -640,7 +424,7 @@ class GlobalMotionCompensation {
 
 ---
 
-## 8. Practical Usage {#practical-usage}
+## 6. Practical Usage {#practical-usage}
 
 ### 8.1 Compilation
 
@@ -722,7 +506,7 @@ int main() {
 
 ---
 
-## 9. Conclusions and Future Developments {#conclusions}
+## 7. Conclusions and Future Developments {#conclusions}
 
 ### 9.1 State of the Art 2025
 
