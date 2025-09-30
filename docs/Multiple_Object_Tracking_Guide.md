@@ -15,8 +15,7 @@
 
 ---
 
-## 1. Introduction to Multiple Object Tracking {#introduction}
-
+## 1. Introduction to Multiple Object Tracking 
 **Multiple Object Tracking (MOT)** is a fundamental computer vision problem that involves simultaneously tracking multiple moving objects through video sequences. The goal is to maintain object identities over time while handling occlusions, appearance changes, and complex movements.
 
 ### Core Problem Statement
@@ -39,7 +38,7 @@ MOT consists of three main phases:
 
 ---
 
-## 2. MOTChallenge: The Reference Benchmark {#motchallenge}
+## 2. MOTChallenge: The Reference Benchmark
 
 ### What is MOTChallenge?
 
@@ -79,11 +78,11 @@ Despite "dated" names, these benchmarks remain gold standards because:
 
 ---
 
-## 3. Datasets and Benchmarks 2025 {#datasets-2025}
+## 3. Datasets and Benchmarks
 
 ### Main Datasets by Category
 
-| **Dataset/Benchmark** | **Domain** | **2025 Relevance** | **Main Challenges** |
+| **Dataset/Benchmark** | **Domain** | ** Relevance** | **Main Challenges** |
 |----------------------|-------------|---------------------|----------------------|
 | **MOT17/MOT20** | Urban pedestrians | Academic gold standard | Crowded scenes, occlusions, ID switches |
 | **DanceTrack** | People with uniform appearance | Advanced motion modeling | Non-linear movement, similar appearance |
@@ -91,7 +90,7 @@ Despite "dated" names, these benchmarks remain gold standards because:
 | **KITTI-MOT** | Vehicles (autonomous driving) | Automotive applications | Ego-motion, distant objects, weather conditions |
 | **UA-DETRAC** | Vehicle traffic | Road surveillance | Traffic density, multiple scales |
 
-### Modern Characteristics (2025)
+### Modern Characteristics 
 
 A benchmark is considered "modern" if it features:
 
@@ -101,7 +100,7 @@ A benchmark is considered "modern" if it features:
 - **Multimodality**: LiDAR, depth, multiple views when relevant
 - **Data scale**: More frames, more tracks, greater diversity
 
-### 2025 Recommendations
+### Recommendations
 
 **For general use (pedestrians/general-purpose)**:
 - MOT20 + MOT17 (baseline)
@@ -115,7 +114,7 @@ A benchmark is considered "modern" if it features:
 
 ---
 
-## 4. Evaluation Metrics {#metrics}
+## 4. Evaluation Metrics
 
 Multiple Object Tracking evaluation uses several complementary metrics to assess different aspects of tracking performance. Understanding these metrics is crucial for proper algorithm evaluation and comparison.
 
@@ -424,7 +423,7 @@ class GlobalMotionCompensation {
 
 ---
 
-## 6. Practical Usage {#practical-usage}
+## 6. Practical Usage 
 
 ### 8.1 Compilation
 
