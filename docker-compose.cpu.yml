@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  multi-object-tracking-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
+    image: multi-object-tracking:cpu
+    volumes:
+      # Mount your models directory
+      - ./models:/app/models
+      # Mount your videos directory
+      - ./videos:/app/videos
+      # Mount config files if you want to modify them
+      - ./trackers/BoTSORT/config:/app/config
+    # Example command - customize as needed
+    command: >
+      --link=/app/videos/input.mp4
+      --tracker=BoTSORT
+      --labels=/app/coco.names
+      --model_path=/app/models/your-model.onnx
+      --class=car,person
+    # If you need to display the output, you can add X11 forwarding
+    # environment:
+    #   - DISPLAY=${DISPLAY}
+    # volumes:
+    #   - /tmp/.X11-unix:/tmp/.X11-unix:rw
