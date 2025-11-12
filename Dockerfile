@@ -39,7 +39,6 @@ RUN rm -rf build && \
     cmake -G Ninja -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DDEFAULT_BACKEND=ONNX_RUNTIME \
-    -DUSE_GSTREAMER=OFF \
     && cmake --build build --config Release
 
 # Stage 2: Runtime environment
@@ -74,8 +73,8 @@ COPY --from=builder /workspace/build/multi_object_tracking /app/
 COPY --from=builder /workspace/coco.names /app/
 COPY --from=builder /workspace/trackers/BoTSORT/config /app/config/
 
-# Create directories for models and videos
-RUN mkdir -p /app/models /app/videos
+# Create directories for models and data
+RUN mkdir -p /app/models /app/data /app/labels
 
 # Set the entrypoint
 ENTRYPOINT ["/app/multi_object_tracking"]
