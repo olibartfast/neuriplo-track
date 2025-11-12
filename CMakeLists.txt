@@ -30,13 +30,13 @@ message(STATUS "✓ Eigen3 found")
 include(FetchContent)
 
 # Fetch object-detection-inference with specific version
+set(USE_GSTREAMER OFF CACHE BOOL "" FORCE)
+set(BUILD_ONLY_LIB OFF CACHE BOOL "" FORCE)  # Build full project including app
 FetchContent_Declare(
     object-detection-inference
     GIT_REPOSITORY https://github.com/olibartfast/object-detection-inference.git
     GIT_TAG        ${OBJECT_DETECTION_INFERENCE_VERSION}
 )
-set(USE_GSTREAMER OFF)
-set(BUILD_ONLY_LIB ON)  # Only build the detectors library from object-detection-inference
 FetchContent_MakeAvailable(object-detection-inference)
 message(STATUS "object-detection-inference_SOURCE_DIR: ${object-detection-inference_SOURCE_DIR}")
 
