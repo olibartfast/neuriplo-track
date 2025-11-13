@@ -23,6 +23,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${object-detection-inference_SOURCE_DIR}/detectors/src
     ${object-detection-inference_SOURCE_DIR}/detectors/src/models
     ${object-detection-inference_SOURCE_DIR}/common
+    ${neuriplo_SOURCE_DIR}/include
+    ${neuriplo_SOURCE_DIR}/src
+    ${neuriplo_SOURCE_DIR}/backends
+    ${neuriplo_SOURCE_DIR}/backends/src
     ${bytetrack_SOURCE_DIR}/include
     ${OpenCV_INCLUDE_DIRS}
     ${GLOG_INCLUDE_DIRS}

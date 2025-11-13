@@ -18,6 +18,7 @@ private:
     void drawDetections(cv::Mat& frame, const std::vector<Detection>& detections);
     void drawTracks(cv::Mat& frame, const std::vector<TrackedObject>& tracks);
     std::unique_ptr<BaseTracker> createTracker(const std::string& trackingAlgorithm, const TrackConfig& config);
+    std::set<int> mapClassesToIds(const std::vector<std::string>& classesToTrack, const std::vector<std::string>& allClasses);
     
     AppConfig config_;
     std::unique_ptr<InferenceInterface> engine_;

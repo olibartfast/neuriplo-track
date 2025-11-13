@@ -5,7 +5,7 @@
 
 class BoTSORTWrapper : public BaseTracker {
 private:
-    std::unique_ptr<BoTSORT> tracker_;
+    std::unique_ptr<botsort::BoTSORT> tracker_;
 
 public:
     explicit BoTSORTWrapper(const TrackConfig& config);

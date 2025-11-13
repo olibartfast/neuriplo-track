@@ -37,6 +37,7 @@ target_include_directories(trackers PUBLIC
     ${EIGEN3_INCLUDE_DIR}
     ${object-detection-inference_SOURCE_DIR}/detectors/inc
     ${object-detection-inference_SOURCE_DIR}/common
+    ${ONNX_RUNTIME_DIR}/include
 )
 
 # Link libraries
@@ -45,4 +46,5 @@ target_link_libraries(trackers PUBLIC
     glog::glog
     bytetrack
     Eigen3::Eigen
+    ${ONNX_RUNTIME_DIR}/lib/libonnxruntime.so
 )

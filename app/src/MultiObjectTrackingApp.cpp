@@ -22,7 +22,7 @@ MultiObjectTrackingApp::MultiObjectTrackingApp(const AppConfig& config)
         classes_ = readLabelNames(config_.labelsPath);
         
         // Map class names to IDs
-        config_.classesToTrackIds = CommandLineParser::mapClassesToIds(config_.classesToTrack, classes_);
+        config_.classesToTrackIds = mapClassesToIds(config_.classesToTrack, classes_);
         
         if (config_.classesToTrackIds.empty()) {
             throw std::runtime_error("No valid classes to track");
@@ -36,8 +36,8 @@ MultiObjectTrackingApp::MultiObjectTrackingApp(const AppConfig& config)
 
         const auto model_info = engine_->get_model_info();
 
-        // Setup detector
-        detector_ = DetectorSetup::createDetector(config_.detectorType, model_info, config_.confidenceThreshold);
+        // Setup detector (DetectorSetup::createDetector takes only detectorType and model_info)
+        detector_ = DetectorSetup::createDetector(config_.detectorType, model_info);
         if (!detector_) {
             throw std::runtime_error("Can't setup a detector: " + config_.detectorType);
         }
@@ -187,4 +187,22 @@ std::unique_ptr<BaseTracker> MultiObjectTrackingApp::createTracker(
     }
 
     return nullptr;
+}
+
+std::set<int> MultiObjectTrackingApp::mapClassesToIds(
+    const std::vector<std::string>& classesToTrack,
+    const std::vector<std::string>& allClasses) {
+    
+    std::set<int> classIds;
+    
+    for (const auto& className : classesToTrack) {
+        auto it = std::find(allClasses.begin(), allClasses.end(), className);
+        if (it != allClasses.end()) {
+            classIds.insert(static_cast<int>(std::distance(allClasses.begin(), it)));
+        } else {
+            LOG(WARNING) << "Class '" << className << "' not found in labels file";
+        }
+    }
+    
+    return classIds;
 }
