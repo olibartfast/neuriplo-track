@@ -12,6 +12,7 @@ C++ framework for multi-object tracking, integrating state-of-the-art tracking a
 - **Multiple Detection Models**: YOLO series (v4-v12), RT-DETR, D-FINE, and more
 - **Modular Architecture**: Trackers library can be built independently
 - **Docker Deployment Ready**: Container support for easy deployment
+- **Fetched Dependencies**: Bundles [object-detection-inference](https://github.com/olibartfast/object-detection-inference) (and embedded [Neuriplo](https://github.com/olibartfast/neuriplo)) plus ByteTrack via FetchContent
 
 ## 🔧 Requirements
 
@@ -112,6 +113,10 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 - `--gmc_config`: Path to GMC config file (for BoTSORT)
 - `--reid_config`: Path to ReID config file (for BoTSORT)
 - `--reid_onnx`: Path to ReID ONNX model (for BoTSORT)
+- `--input_sizes`: Input sizes for models with dynamic dimensions. Provide values only for dynamic dimensions in C,H,W order.
+  - If the model has fixed channels (e.g., YOLO `1,3,-1,-1`), pass `H,W` (such as `640,640`).
+  - If all dims are dynamic (e.g., `1,-1,-1,-1`), use `C,H,W` (such as `3,640,640`).
+  - See `.vscode/launch.json` for concrete examples.
 
 ### Examples
 
