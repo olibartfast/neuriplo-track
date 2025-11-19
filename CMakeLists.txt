@@ -31,7 +31,6 @@ include(FetchContent)
 
 # Fetch object-detection-inference with specific version
 set(USE_GSTREAMER OFF CACHE BOOL "" FORCE)
-set(BUILD_ONLY_LIB OFF CACHE BOOL "" FORCE)  # Build full project including app
 FetchContent_Declare(
     object-detection-inference
     GIT_REPOSITORY https://github.com/olibartfast/object-detection-inference.git
