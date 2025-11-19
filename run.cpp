@@ -62,6 +62,26 @@ std::set<int> mapClassesToIds(const std::vector<std::string>& classesToTrack, co
     return classIds;
 }
 
+std::string resolveTrackerConfigPath(const std::string& configuredPath,
+                                     const std::string& trackingAlgorithm,
+                                     const std::string& fileName) {
+    std::filesystem::path requested(configuredPath);
+    if (std::filesystem::exists(requested)) {
+        return requested.string();
+    }
+
+    std::filesystem::path fallback = std::filesystem::path("trackers") /
+                                     trackingAlgorithm /
+                                     "config" /
+                                     fileName;
+    if (std::filesystem::exists(fallback)) {
+        std::cout << "Info: Using fallback config " << fallback << std::endl;
+        return fallback.string();
+    }
+
+    return requested.string();
+}
+
 std::string generateOutputPath(const std::string& inputPath) {
     std::filesystem::path inputFilePath(inputPath);
     if (inputFilePath.extension().empty()) {
@@ -171,7 +191,11 @@ int main(int argc, char** argv) {
     const auto model_info = engine->get_model_info();
     const auto detector = DetectorSetup::createDetector(detectorType, model_info);    
 
-    TrackConfig config(classes_to_track, trackerConfigPath, gmcConfigPath, reidConfigPath, reidOnnxPath);
+    const std::string resolvedTrackerConfig = resolveTrackerConfigPath(trackerConfigPath, trackingAlgorithm, "tracker.ini");
+    const std::string resolvedGmcConfig = resolveTrackerConfigPath(gmcConfigPath, trackingAlgorithm, "gmc.ini");
+    const std::string resolvedReidConfig = resolveTrackerConfigPath(reidConfigPath, trackingAlgorithm, "reid.ini");
+
+    TrackConfig config(classes_to_track, resolvedTrackerConfig, resolvedGmcConfig, resolvedReidConfig, reidOnnxPath);
     std::unique_ptr<BaseTracker> tracker = createTracker(trackingAlgorithm, config);
     
     if (!tracker) {
