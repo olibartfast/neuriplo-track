@@ -34,6 +34,12 @@ cmake --build build --config Release
 ```bash
 ./multi_object_tracking --link=<path to video or stream> --tracker=<tracking algorithm i.e. "SORT", "ByteTrack", "BoTSORT"> --labels=<path to label file> --model_path=<path to model binary> --class=<list of classes label name to track> 
 ```
+
+### Optional Parameters
+- `--input_sizes`: Input sizes for models with dynamic dimensions. Provide values only for dynamic dimensions in C,H,W order.
+  - For YOLO models with fixed channels (shape: `1,3,-1,-1`): use `H,W` format (e.g., `640,640`)  
+  - For models with all dynamic dimensions (shape: `1,-1,-1,-1`): use `C,H,W` format (e.g., `3,640,640`)
+
 *For examples, check the [.vscode folder](.vscode/launch.json).*
 
 ## Video demo example
