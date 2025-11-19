@@ -201,18 +201,22 @@ int main(int argc, char** argv) {
     const std::string resolvedReidConfig = resolveTrackerConfigPath(reidConfigPath, trackingAlgorithm, "reid.ini");
 
     std::string resolvedReidModel = reidOnnxPath;
-    if (!resolvedReidModel.empty() && !std::filesystem::exists(resolvedReidModel)) {
-        std::filesystem::path fallbackReidModel = std::filesystem::path("trackers") /
-                                                   trackingAlgorithm /
-                                                   "models" /
-                                                   std::filesystem::path(reidOnnxPath).filename();
-        if (std::filesystem::exists(fallbackReidModel)) {
-            std::cout << "Info: Using fallback ReID model " << fallbackReidModel << std::endl;
-            resolvedReidModel = fallbackReidModel.string();
-        } else {
-            std::cout << "Info: ReID model '" << reidOnnxPath << "' not found. Re-ID module disabled." << std::endl;
-            resolvedReidModel.clear();
+    if (trackingAlgorithm == "BoTSORT") {
+        if (!resolvedReidModel.empty() && !std::filesystem::exists(resolvedReidModel)) {
+            std::filesystem::path fallbackReidModel = std::filesystem::path("trackers") /
+                                                       trackingAlgorithm /
+                                                       "models" /
+                                                       std::filesystem::path(reidOnnxPath).filename();
+            if (std::filesystem::exists(fallbackReidModel)) {
+                std::cout << "Info: Using fallback ReID model " << fallbackReidModel << std::endl;
+                resolvedReidModel = fallbackReidModel.string();
+            } else {
+                std::cout << "Info: ReID model '" << reidOnnxPath << "' not found. Re-ID module disabled." << std::endl;
+                resolvedReidModel.clear();
+            }
         }
+    } else {
+        resolvedReidModel.clear();
     }
 
     TrackConfig config(classes_to_track, resolvedTrackerConfig, resolvedGmcConfig, resolvedReidConfig, resolvedReidModel);
