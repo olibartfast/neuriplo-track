@@ -17,6 +17,7 @@ static const std::string params = "{ help h   |   | print help message }"
       "{ tracker tr   |  SORT | tracking algorithm}"
       "{ classes cl   |  car, person | classes label name from coco dataset to track}"
       "{ model_path mp   |  ../models | path to models}"
+      "{ input_sizes is   |  640,640 | input sizes for dynamic model dimensions (height,width)}"
       "{ tracker_config tc   |  config/tracker.ini | path to tracker config file}"
       "{ gmc_config gc   |  config/gmc.ini | path to gmc config file}"
       "{ reid_config rc   |  config/reid.ini | path to reid config file}"
@@ -127,6 +128,7 @@ int main(int argc, char** argv) {
     const std::string classesToTrackString = parser.get<std::string>("classes");
     const std::string detectorType = parser.get<std::string>("detector_type");
     const std::string trackingAlgorithm = parser.get<std::string>("tracker");
+    const std::string inputSizesStr = parser.get<std::string>("input_sizes");
 
 
     const std::string trackerConfigPath = parser.get<std::string>("tracker_config");
@@ -143,14 +145,29 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    // Parse input sizes (e.g., "3,640,640" -> {3, 640, 640})
+    std::vector<std::vector<int64_t>> input_sizes;
+    if (!inputSizesStr.empty()) {
+        std::vector<std::string> sizeTokens = splitString(inputSizesStr, ',');
+        std::vector<int64_t> sizes;
+        for (const auto& token : sizeTokens) {
+            sizes.push_back(std::stoll(token));
+        }
+        input_sizes.push_back(sizes);
+    }
+
     // Open video file
     cv::VideoCapture cap(parser.get<std::string>("link"));
-    const auto detector =  DetectorSetup::createDetector(detectorType);
 
-    const auto engine = setup_inference_engine(modelPath, "", true);
+    const auto engine = input_sizes.empty() 
+        ? setup_inference_engine(modelPath)
+        : setup_inference_engine(modelPath, false, 1, input_sizes);
     if (!engine) {
         throw std::runtime_error("Can't setup an inference engine for " + modelPath);
-    }    
+    }
+    
+    const auto model_info = engine->get_model_info();
+    const auto detector = DetectorSetup::createDetector(detectorType, model_info);    
 
     TrackConfig config(classes_to_track, trackerConfigPath, gmcConfigPath, reidConfigPath, reidOnnxPath);
     std::unique_ptr<BaseTracker> tracker = createTracker(trackingAlgorithm, config);

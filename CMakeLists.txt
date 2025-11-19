@@ -15,8 +15,53 @@ find_package(OpenCV REQUIRED)
 find_package(glog REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-# ONNX Runtime setup
-set(ONNXRUNTIME_DIR "$ENV{HOME}/onnxruntime-linux-x64-gpu-1.19.2")
+include(FetchContent)
+
+# ONNX Runtime setup - Use environment variable or download
+set(ONNXRUNTIME_VERSION "1.19.2")
+
+# Check if ONNX_RUNTIME_DIR is set via environment
+if(DEFINED ENV{ONNX_RUNTIME_DIR})
+    set(ONNXRUNTIME_DIR "$ENV{ONNX_RUNTIME_DIR}")
+    message(STATUS "Using ONNX Runtime from environment: ${ONNXRUNTIME_DIR}")
+else()
+    # Default path following neuriplo convention
+    if(WIN32)
+        set(DEFAULT_DEPENDENCY_ROOT "$ENV{USERPROFILE}/dependencies")
+    else()
+        set(DEFAULT_DEPENDENCY_ROOT "$ENV{HOME}/dependencies")
+    endif()
+    
+    set(ONNXRUNTIME_DIR "${DEFAULT_DEPENDENCY_ROOT}/onnxruntime-linux-x64-gpu-${ONNXRUNTIME_VERSION}")
+    
+    # Download if not exists
+    if(NOT EXISTS "${ONNXRUNTIME_DIR}")
+        message(STATUS "Downloading ONNX Runtime ${ONNXRUNTIME_VERSION}...")
+        file(DOWNLOAD
+            "https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/onnxruntime-linux-x64-gpu-${ONNXRUNTIME_VERSION}.tgz"
+            "${CMAKE_BINARY_DIR}/onnxruntime.tgz"
+            SHOW_PROGRESS
+            STATUS DOWNLOAD_STATUS
+        )
+        
+        list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
+        if(NOT STATUS_CODE EQUAL 0)
+            message(FATAL_ERROR "Failed to download ONNX Runtime")
+        endif()
+        
+        message(STATUS "Extracting ONNX Runtime...")
+        file(ARCHIVE_EXTRACT
+            INPUT "${CMAKE_BINARY_DIR}/onnxruntime.tgz"
+            DESTINATION "${DEFAULT_DEPENDENCY_ROOT}"
+        )
+        
+        file(REMOVE "${CMAKE_BINARY_DIR}/onnxruntime.tgz")
+        message(STATUS "ONNX Runtime installed to ${ONNXRUNTIME_DIR}")
+    else()
+        message(STATUS "Using existing ONNX Runtime at ${ONNXRUNTIME_DIR}")
+    endif()
+endif()
+
 set(ONNXRUNTIME_INCLUDE_DIRS "${ONNXRUNTIME_DIR}/include")
 set(ONNXRUNTIME_LIB_DIR "${ONNXRUNTIME_DIR}/lib")
 
@@ -35,13 +80,15 @@ find_library(ONNXRUNTIME_GPU_LIBRARY
     NAMES onnxruntime_providers_cuda
     PATHS ${ONNXRUNTIME_LIB_DIR}
     NO_DEFAULT_PATH
-    REQUIRED
 )
 
-message(STATUS "Found ONNX Runtime: ${ONNXRUNTIME_LIBRARY}")
-message(STATUS "Found ONNX Runtime GPU: ${ONNXRUNTIME_GPU_LIBRARY}")
+if(ONNXRUNTIME_GPU_LIBRARY)
+    message(STATUS "Found ONNX Runtime GPU: ${ONNXRUNTIME_GPU_LIBRARY}")
+else()
+    message(STATUS "ONNX Runtime GPU provider not found, using CPU only")
+endif()
 
-include(FetchContent)
+message(STATUS "Found ONNX Runtime: ${ONNXRUNTIME_LIBRARY}")
 
 # Fetch object-detection-inference
 FetchContent_Declare(
@@ -100,8 +147,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${object-detection-inference_SOURCE_DIR}/detectors/src/models   
     ${object-detection-inference_SOURCE_DIR}/common  
     ${GLOG_INCLUDE_DIRS}
-    ${InferenceEngines_SOURCE_DIR}/backends
-    ${InferenceEngines_SOURCE_DIR}/backends/src
+    ${neuriplo_SOURCE_DIR}/backends
+    ${neuriplo_SOURCE_DIR}/backends/src
     trackers/SORT
     trackers/BoTSORT/include
     ${bytetrack_SOURCE_DIR}/include
@@ -113,13 +160,16 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     glog::glog
     ${OpenCV_LIBS}
     detectors
-    InferenceEngines
+    neuriplo
     ${ONNXRUNTIME_LIBRARY}
-    ${ONNXRUNTIME_GPU_LIBRARY}
-    detectors
     bytetrack
     Eigen3::Eigen
     -lstdc++
     -lpthread
     -ldl
 )
+
+# Link GPU library if available
+if(ONNXRUNTIME_GPU_LIBRARY)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${ONNXRUNTIME_GPU_LIBRARY})
+endif()

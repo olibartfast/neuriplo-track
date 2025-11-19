@@ -11,7 +11,7 @@ This repository is designed to wrap and test [multi-object trackers](https://pap
 - ONNX Runtime, for detection task and  BoTSORT Re-Identification
 
 ### Fetched
-- [Object Detection Inference Library](https://github.com/olibartfast/object-detection-inference) for object detection(which itself contains the [Inference Engines Library](https://github.com/olibartfast/inference-engines)):
+- [Object Detection Inference Library](https://github.com/olibartfast/object-detection-inference) for object detection(which itself contains the [Neuriplo Library](https://github.com/olibartfast/neuriplo)):
 
 ```cmake
 include(FetchContent)
