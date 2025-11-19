@@ -1,4 +1,9 @@
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <set>
+#include <sstream>
 #include <vector>
 #include <opencv2/opencv.hpp>
 #include "SortWrapper.hpp"
@@ -195,7 +200,22 @@ int main(int argc, char** argv) {
     const std::string resolvedGmcConfig = resolveTrackerConfigPath(gmcConfigPath, trackingAlgorithm, "gmc.ini");
     const std::string resolvedReidConfig = resolveTrackerConfigPath(reidConfigPath, trackingAlgorithm, "reid.ini");
 
-    TrackConfig config(classes_to_track, resolvedTrackerConfig, resolvedGmcConfig, resolvedReidConfig, reidOnnxPath);
+    std::string resolvedReidModel = reidOnnxPath;
+    if (!resolvedReidModel.empty() && !std::filesystem::exists(resolvedReidModel)) {
+        std::filesystem::path fallbackReidModel = std::filesystem::path("trackers") /
+                                                   trackingAlgorithm /
+                                                   "models" /
+                                                   std::filesystem::path(reidOnnxPath).filename();
+        if (std::filesystem::exists(fallbackReidModel)) {
+            std::cout << "Info: Using fallback ReID model " << fallbackReidModel << std::endl;
+            resolvedReidModel = fallbackReidModel.string();
+        } else {
+            std::cout << "Info: ReID model '" << reidOnnxPath << "' not found. Re-ID module disabled." << std::endl;
+            resolvedReidModel.clear();
+        }
+    }
+
+    TrackConfig config(classes_to_track, resolvedTrackerConfig, resolvedGmcConfig, resolvedReidConfig, resolvedReidModel);
     std::unique_ptr<BaseTracker> tracker = createTracker(trackingAlgorithm, config);
     
     if (!tracker) {
