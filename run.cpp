@@ -11,17 +11,18 @@
 
 
 static const std::string params = "{ help h   |   | print help message }"
-      "{ detector_type     |  yolov5 | detector model}"
-      "{ link l   |   | capture video from ip camera}"
-      "{ labels lb   |  ../labels | path to class labels file}"
-      "{ tracker tr   |  SORT | tracking algorithm}"
-      "{ classes cl   |  car, person | classes label name from coco dataset to track}"
-      "{ model_path mp   |  ../models | path to models}"
-      "{ input_sizes is   |   | input sizes for dynamic model dimensions only (e.g., '640,640' for YOLO with fixed channels, '3,640,640' if all dims dynamic)}"
-      "{ tracker_config tc   |  config/tracker.ini | path to tracker config file}"
-      "{ gmc_config gc   |  config/gmc.ini | path to gmc config file}"
-      "{ reid_config rc   |  config/reid.ini | path to reid config file}"
-      "{ reid_onnx ro   |  models/reid.onnx | path to reid onnx file}";
+    "{ detector_type     |  yolov5 | detector model}"
+    "{ link l   |   | capture video from ip camera}"
+    "{ labels lb   |  ../labels | path to class labels file}"
+    "{ tracker tr   |  SORT | tracking algorithm}"
+    "{ classes cl   |  car, person | classes label name from coco dataset to track}"
+    "{ model_path mp   |  ../models | path to models}"
+    "{ input_sizes is   |   | input sizes for dynamic model dimensions only (e.g., '640,640' for YOLO with fixed channels, '3,640,640' if all dims dynamic)}"
+    "{ tracker_config tc   |  config/tracker.ini | path to tracker config file}"
+    "{ gmc_config gc   |  config/gmc.ini | path to gmc config file}"
+    "{ reid_config rc   |  config/reid.ini | path to reid config file}"
+    "{ reid_onnx ro   |  models/reid.onnx | path to reid onnx file}"
+    "{ verbose v   |   | enable verbose per-frame logging }";
   
 
 std::vector<std::string> readLabelNames(const std::string& fileName)
@@ -134,7 +135,8 @@ int main(int argc, char** argv) {
     const std::string trackerConfigPath = parser.get<std::string>("tracker_config");
     const std::string gmcConfigPath = parser.get<std::string>("gmc_config");
     const std::string reidConfigPath = parser.get<std::string>("reid_config");
-    const std::string reidOnnxPath = parser.get<std::string>("reid_onnx");   
+    const std::string reidOnnxPath = parser.get<std::string>("reid_onnx");  
+    const bool verboseLogging = parser.has("verbose"); 
     
     std::vector<std::string> classes = readLabelNames(labelsPath);
     std::vector<std::string> classesToTrack = splitString(classesToTrackString, ',');
@@ -171,32 +173,66 @@ int main(int argc, char** argv) {
 
     TrackConfig config(classes_to_track, trackerConfigPath, gmcConfigPath, reidConfigPath, reidOnnxPath);
     std::unique_ptr<BaseTracker> tracker = createTracker(trackingAlgorithm, config);
+    
+    if (!tracker) {
+        std::cerr << "Error: Failed to create tracker" << std::endl;
+        return 1;
+    }
+    
+    std::cout << "Tracker '" << trackingAlgorithm << "' initialized successfully" << std::endl;
 
-       std::vector<cv::Scalar_<int>> randColors(20);
+    std::vector<cv::Scalar_<int>> randColors(20);
     cv::RNG rng(0xFFFFFFFF);
     for (auto& color : randColors)
         rng.fill(color, cv::RNG::UNIFORM, 0, 256);
 
     std::string outputPath = generateOutputPath(parser.get<std::string>("link"));
-    cv::VideoWriter videoWriter = setupVideoWriter(cap, outputPath);
-
-    cv::Mat frame;
-    while (cap.read(frame)) {
-        const auto input_blob = detector->preprocess_image(frame);
-        const auto [outputs, shapes] = engine->get_infer_results(input_blob);
-        std::vector<Detection> detections = detector->postprocess(outputs, shapes, frame.size());
-        auto tracksOutput = tracker->update(detections, frame);
-
-        drawDetections(frame, detections, classes);
-        drawTracks(frame, tracksOutput, randColors);
+    
+    {
+        cv::VideoWriter videoWriter = setupVideoWriter(cap, outputPath);
         
-        videoWriter.write(frame);
-        // cv::imshow(trackingAlgorithm, frame);
-        // if (cv::waitKey(1) == 27) // Exit if ESC key is pressed
-        //     break;
-    }
+        std::cout << "Starting video processing..." << std::endl;
 
-    videoWriter.release();
+        cv::Mat frame;
+        int frame_count = 0;
+        while (cap.read(frame)) {
+            const bool logThisFrame = verboseLogging || (frame_count % 50 == 0);
+            if (logThisFrame) {
+                std::cout << "Frame " << frame_count << ": processing" << std::endl;
+            }
+
+            const auto input_blob = detector->preprocess_image(frame);
+            const auto [outputs, shapes] = engine->get_infer_results(input_blob);
+            std::vector<Detection> detections = detector->postprocess(outputs, shapes, frame.size());
+
+            std::vector<TrackedObject> tracksOutput = tracker->update(detections, frame);
+            if (logThisFrame && detections.empty()) {
+                std::cout << "Frame " << frame_count << ": no detections" << std::endl;
+            }
+
+            drawDetections(frame, detections, classes);
+            drawTracks(frame, tracksOutput, randColors);
+            videoWriter.write(frame);
+
+            if (logThisFrame) {
+                std::cout << "Frame " << frame_count << ": " << detections.size()
+                          << " detections, " << tracksOutput.size() << " tracks" << std::endl;
+            }
+
+            frame_count++;
+        }
+
+        std::cout << "Processed " << frame_count << " frames. Finalizing video..." << std::endl;
+        videoWriter.release();
+        // videoWriter destructor will be called here when scope ends
+    }
+    
+    std::cout << "Video saved to: " << outputPath << std::endl;
+    
+    // Cleanup - this is where crash likely happens
+    cap.release();
+    tracker.reset();
+    
     return 0;
 }
 

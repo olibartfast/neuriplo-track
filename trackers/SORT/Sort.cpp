@@ -2,6 +2,7 @@
 // Sort.cpp: SORT(Simple Online and Realtime Tracking) Class Implementation
 //
 #include "Sort.hpp"
+#include <cmath>
 
 
 // Computes IOU between two bounding boxes
@@ -35,7 +36,11 @@ std::vector<TrackingBox> Sort::update(const std::vector<TrackingBox>& detect_fra
     std::vector<cv::Rect_<float>> predicted_boxes;
     for (auto it = m_trackers.begin(); it != m_trackers.end();) {
         cv::Rect_<float> pBox = (*it).predict();
-        if (pBox.x >= 0 && pBox.y >= 0) {
+        // Check for valid box (non-negative coordinates and finite dimensions)
+        if (pBox.x >= 0 && pBox.y >= 0 && 
+            pBox.width > 0 && pBox.height > 0 &&
+            !std::isnan(pBox.x) && !std::isnan(pBox.y) && 
+            !std::isnan(pBox.width) && !std::isnan(pBox.height)) {
             predicted_boxes.push_back(pBox);
             it++;
         } else {
@@ -47,6 +52,34 @@ std::vector<TrackingBox> Sort::update(const std::vector<TrackingBox>& detect_fra
     // 2. associate detections to tracked object (both represented as bounding boxes)
     unsigned int track_num = predicted_boxes.size();
     unsigned int detect_num = detect_frame_data.size();
+
+    if (track_num == 0) {
+        // No active trackers left, bootstrap from current detections
+        for (unsigned int i = 0; i < detect_num; ++i) {
+            m_trackers.emplace_back(detect_frame_data[i].box);
+        }
+        return std::vector<TrackingBox>{};
+    }
+
+    if (detect_num == 0) {
+        // No detections this frame, just age existing trackers and drop stale ones
+        m_tracking_output.clear();
+        for (auto it = m_trackers.begin(); it != m_trackers.end();) {
+            if ((*it).m_time_since_update > m_max_age) {
+                it = m_trackers.erase(it);
+            } else {
+                if (((*it).m_time_since_update < 1) &&
+                        ((*it).m_hit_streak >= m_min_hits || m_frame_count <= m_min_hits)) {
+                    TrackingBox output;
+                    output.box = (*it).get_state();
+                    output.id = (*it).m_id + 1;
+                    m_tracking_output.push_back(output);
+                }
+                ++it;
+            }
+        }
+        return m_tracking_output;
+    }
 
     std::vector<std::vector<double>> iou_matrix;
     iou_matrix.resize(track_num, std::vector<double>(detect_num, 0));
@@ -127,14 +160,14 @@ std::vector<TrackingBox> Sort::update(const std::vector<TrackingBox>& detect_fra
             output.box = (*it).get_state();
             output.id = (*it).m_id + 1;
             m_tracking_output.push_back(output);
-            it++;
         }
-        else
-            it++;
 
         // remove dead tracklet
-        if (it != m_trackers.end() && (*it).m_time_since_update > m_max_age)
+        if ((*it).m_time_since_update > m_max_age) {
             it = m_trackers.erase(it);
+        } else {
+            it++;
+        }
     }
     return m_tracking_output;
 }
