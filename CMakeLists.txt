@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(multi_object_tracking)
+project(vision-tracking)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
