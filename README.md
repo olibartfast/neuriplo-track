@@ -81,7 +81,7 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 ### Command Line Options
 
 ```bash
-./vision_tracking \
+./vision-tracking \
   --type=<model_type> \
   --source=<input_source> \
   --labels=<labels_file> \
@@ -122,7 +122,7 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 
 #### Basic tracking with SORT
 ```bash
-./vision_tracking \
+./vision-tracking \
   --type=yolo \
   --source=video.mp4 \
   --labels=coco.names \
@@ -133,7 +133,7 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 
 #### Advanced tracking with BoTSORT and GPU
 ```bash
-./vision_tracking \
+./vision-tracking \
   --type=yolo \
   --source=rtsp://camera_ip:port/stream \
   --labels=coco.names \
@@ -148,7 +148,7 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 
 #### ByteTrack with TensorRT
 ```bash
-./vision_tracking \
+./vision-tracking \
   --type=yolo \
   --source=video.mp4 \
   --labels=coco.names \
@@ -160,7 +160,7 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 
 ### Help
 ```bash
-./vision_tracking --help
+./vision-tracking --help
 ```
 
 ## 🐳 Docker Deployment
@@ -189,7 +189,7 @@ docker run --gpus all --rm \
 ## 📁 Project Structure
 
 ```
-vision_tracking/
+vision-tracking/
 ├── app/                      # Application code
 │   ├── inc/                  # Application headers
 │   ├── src/                  # Application source files
@@ -233,7 +233,7 @@ vision_tracking/
 
 ## 📫 Support
 
-- Open an [issue](https://github.com/olibartfast/vision_tracking/issues) for bug reports or feature requests
+- Open an [issue](https://github.com/olibartfast/vision-tracking/issues) for bug reports or feature requests
 - Contributions, corrections, and suggestions are welcome
 
 ## 📄 License
