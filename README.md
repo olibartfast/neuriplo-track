@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/std/the-standard)
 
-C++ framework for multi-objec tracking, integrating state-of-the-art tracking algorithms (SORT, ByteTrack, BoTSORT) with the [object-detection-inference](https://github.com/olibartfast/object-detection-inference) library for real-time object detection and tracking.
+C++ framework for multi-object tracking, integrating state-of-the-art tracking algorithms (SORT, ByteTrack, BoTSORT) with the [object-detection-inference](https://github.com/olibartfast/object-detection-inference) library for real-time object detection and tracking.
 
 ## 🚀 Key Features
 
