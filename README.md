@@ -1,9 +1,9 @@
-# Multi-Object Tracking
+# Vision Tracking
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/std/the-standard)
 
-C++ framework for multi-object tracking, integrating state-of-the-art tracking algorithms (SORT, ByteTrack, BoTSORT) with the [object-detection-inference](https://github.com/olibartfast/object-detection-inference) library for real-time object detection and tracking.
+C++ framework for multi-objec tracking, integrating state-of-the-art tracking algorithms (SORT, ByteTrack, BoTSORT) with the [object-detection-inference](https://github.com/olibartfast/object-detection-inference) library for real-time object detection and tracking.
 
 ## 🚀 Key Features
 
@@ -81,7 +81,7 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 ### Command Line Options
 
 ```bash
-./multi_object_tracking \
+./vision_tracking \
   --type=<model_type> \
   --source=<input_source> \
   --labels=<labels_file> \
@@ -122,8 +122,8 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 
 #### Basic tracking with SORT
 ```bash
-./multi_object_tracking \
-  --type=yolov8 \
+./vision_tracking \
+  --type=yolo \
   --source=video.mp4 \
   --labels=coco.names \
   --weights=yolov8n.onnx \
@@ -133,8 +133,8 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 
 #### Advanced tracking with BoTSORT and GPU
 ```bash
-./multi_object_tracking \
-  --type=yolo11 \
+./vision_tracking \
+  --type=yolo \
   --source=rtsp://camera_ip:port/stream \
   --labels=coco.names \
   --weights=yolo11x.onnx \
@@ -148,8 +148,8 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 
 #### ByteTrack with TensorRT
 ```bash
-./multi_object_tracking \
-  --type=yolov8 \
+./vision_tracking \
+  --type=yolo \
   --source=video.mp4 \
   --labels=coco.names \
   --weights=yolov8n.engine \
@@ -160,7 +160,7 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 
 ### Help
 ```bash
-./multi_object_tracking --help
+./vision_tracking --help
 ```
 
 ## 🐳 Docker Deployment
@@ -176,7 +176,7 @@ docker run --gpus all --rm \
   -v $(pwd)/data:/app/data \
   -v $(pwd)/models:/models \
   -v $(pwd)/labels:/labels \
-  multi-object-tracking:latest \
+  vision-tracking:latest \
   --type=yolov8 \
   --source=/app/data/video.mp4 \
   --labels=/labels/coco.names \
@@ -189,7 +189,7 @@ docker run --gpus all --rm \
 ## 📁 Project Structure
 
 ```
-multi_object_tracking/
+vision_tracking/
 ├── app/                      # Application code
 │   ├── inc/                  # Application headers
 │   ├── src/                  # Application source files
@@ -233,7 +233,7 @@ multi_object_tracking/
 
 ## 📫 Support
 
-- Open an [issue](https://github.com/olibartfast/multi_object_tracking/issues) for bug reports or feature requests
+- Open an [issue](https://github.com/olibartfast/vision_tracking/issues) for bug reports or feature requests
 - Contributions, corrections, and suggestions are welcome
 
 ## 📄 License
