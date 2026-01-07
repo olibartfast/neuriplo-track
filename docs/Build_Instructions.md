@@ -26,8 +26,8 @@ sudo apt install -y \
 ### Quick Start
 ```bash
 # Clone repository
-git clone https://github.com/olibartfast/multi_object_tracking.git
-cd multi_object_tracking
+git clone https://github.com/olibartfast/vision-tracking.git
+cd vision-tracking
 
 # Check dependencies
 ./scripts/setup_dependencies.sh
@@ -140,12 +140,12 @@ docker build -t multi-object-tracking:onnxruntime \
 
 ### Check Executable
 ```bash
-./build/multi_object_tracking --help
+./build/vision-tracking --help
 ```
 
 ### Run Simple Test
 ```bash
-./build/multi_object_tracking \
+./build/vision-tracking \
     --type=yolov8 \
     --source=/path/to/video.mp4 \
     --labels=coco.names \

@@ -81,10 +81,10 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
 
 void CommandLineParser::printHelpMessage(const cv::CommandLineParser& parser) {
     std::cout << "\nMulti-Object Tracking Application\n" << std::endl;
-    std::cout << "Usage: multi_object_tracking [options]\n" << std::endl;
+    std::cout << "Usage: vision-tracking [options]\n" << std::endl;
     parser.printMessage();
     std::cout << "\nExamples:\n";
-    std::cout << "  ./multi_object_tracking --source=video.mp4 --type=yolov8 --weights=model.onnx \\\n";
+    std::cout << "  ./vision-tracking --source=video.mp4 --type=yolov8 --weights=model.onnx \\\n";
     std::cout << "    --labels=coco.names --tracker=ByteTrack --classes=person,car\n" << std::endl;
 }
 

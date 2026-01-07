@@ -430,7 +430,7 @@ class GlobalMotionCompensation {
 ```bash
 # Clone repository
 git clone <repository-url>
-cd multi_object_tracking
+cd vision-tracking
 
 # Build with CMake
 rm -rf build
@@ -441,7 +441,7 @@ cmake --build build --config Release
 ### 8.2 Execution
 
 ```bash
-./multi_object_tracking \
+./vision-tracking \
     --link=<video_path_or_stream> \
     --tracker=<SORT|ByteTrack|BoTSORT> \
     --labels=<labels_file> \

@@ -13,7 +13,7 @@ DETECTOR_TYPE="yolov5"
 TRACKER="${TRACKER:-SORT}"
 CLASSES="car,person"
 INPUT_SIZES="640,640"
-EXECUTABLE="./build/multi_object_tracking"
+EXECUTABLE="./build/vision-tracking"
 
 # Colors for output
 GREEN='\033[0;32m'

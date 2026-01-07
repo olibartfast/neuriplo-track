@@ -70,7 +70,7 @@ ENV LD_LIBRARY_PATH=/opt/onnxruntime/lib:${LD_LIBRARY_PATH}
 WORKDIR /app
 
 # Copy the built executable and necessary files from builder
-COPY --from=builder /workspace/build/multi_object_tracking /app/
+COPY --from=builder /workspace/build/vision-tracking /app/
 COPY --from=builder /workspace/coco.names /app/
 COPY --from=builder /workspace/trackers/BoTSORT/config /app/config/
 
@@ -78,7 +78,7 @@ COPY --from=builder /workspace/trackers/BoTSORT/config /app/config/
 RUN mkdir -p /app/models /app/videos
 
 # Set the entrypoint
-ENTRYPOINT ["/app/multi_object_tracking"]
+ENTRYPOINT ["/app/vision-tracking"]
 
 # Default command (can be overridden)
 CMD ["--help"]
