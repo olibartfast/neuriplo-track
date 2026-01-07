@@ -225,8 +225,6 @@ vision-tracking/
 [YOLO11x + BoTSORT Tracker Demo](https://www.youtube.com/watch?v=jYtL8RP6K3s)
 
 ## 🙏 Acknowledgments
-
-- [object-detection-inference](https://github.com/olibartfast/object-detection-inference) - Object detection framework
 - [SORT](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tracking/cpp_inference/yoloSort) - Simple Online and Realtime Tracking
 - [ByteTrack](https://github.com/Vertical-Beach/ByteTrack-cpp) - ByteTrack C++ implementation
 - [BoTSORT](https://github.com/viplix3/BoTSORT-cpp) - BoTSORT C++ implementation
