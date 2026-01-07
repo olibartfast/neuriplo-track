@@ -1,4 +1,4 @@
-# Multi-Object Tracking
+# Vision Tracking
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/std/the-standard)
@@ -12,6 +12,7 @@ C++ framework for multi-object tracking, integrating state-of-the-art tracking a
 - **Multiple Detection Models**: YOLO series (v4-v12), RT-DETR, D-FINE, and more
 - **Modular Architecture**: Trackers library can be built independently
 - **Docker Deployment Ready**: Container support for easy deployment
+- **Fetched Dependencies**: Bundles [object-detection-inference](https://github.com/olibartfast/object-detection-inference) (and embedded [Neuriplo](https://github.com/olibartfast/neuriplo)) plus ByteTrack via FetchContent
 
 ## 🔧 Requirements
 
@@ -80,7 +81,7 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 ### Command Line Options
 
 ```bash
-./multi_object_tracking \
+./vision-tracking \
   --type=<model_type> \
   --source=<input_source> \
   --labels=<labels_file> \
@@ -112,13 +113,17 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 - `--gmc_config`: Path to GMC config file (for BoTSORT)
 - `--reid_config`: Path to ReID config file (for BoTSORT)
 - `--reid_onnx`: Path to ReID ONNX model (for BoTSORT)
+- `--input_sizes`: Input sizes for models with dynamic dimensions. Provide values only for dynamic dimensions in C,H,W order.
+  - If the model has fixed channels (e.g., YOLO `1,3,-1,-1`), pass `H,W` (such as `640,640`).
+  - If all dims are dynamic (e.g., `1,-1,-1,-1`), use `C,H,W` (such as `3,640,640`).
+  - See `.vscode/launch.json` for concrete examples.
 
 ### Examples
 
 #### Basic tracking with SORT
 ```bash
-./multi_object_tracking \
-  --type=yolov8 \
+./vision-tracking \
+  --type=yolo \
   --source=video.mp4 \
   --labels=coco.names \
   --weights=yolov8n.onnx \
@@ -128,8 +133,8 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 
 #### Advanced tracking with BoTSORT and GPU
 ```bash
-./multi_object_tracking \
-  --type=yolo11 \
+./vision-tracking \
+  --type=yolo \
   --source=rtsp://camera_ip:port/stream \
   --labels=coco.names \
   --weights=yolo11x.onnx \
@@ -143,8 +148,8 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 
 #### ByteTrack with TensorRT
 ```bash
-./multi_object_tracking \
-  --type=yolov8 \
+./vision-tracking \
+  --type=yolo \
   --source=video.mp4 \
   --labels=coco.names \
   --weights=yolov8n.engine \
@@ -155,7 +160,7 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 
 ### Help
 ```bash
-./multi_object_tracking --help
+./vision-tracking --help
 ```
 
 ## 🐳 Docker Deployment
@@ -171,7 +176,7 @@ docker run --gpus all --rm \
   -v $(pwd)/data:/app/data \
   -v $(pwd)/models:/models \
   -v $(pwd)/labels:/labels \
-  multi-object-tracking:latest \
+  vision-tracking:latest \
   --type=yolov8 \
   --source=/app/data/video.mp4 \
   --labels=/labels/coco.names \
@@ -184,7 +189,7 @@ docker run --gpus all --rm \
 ## 📁 Project Structure
 
 ```
-multi_object_tracking/
+vision-tracking/
 ├── app/                      # Application code
 │   ├── inc/                  # Application headers
 │   ├── src/                  # Application source files
@@ -228,7 +233,7 @@ multi_object_tracking/
 
 ## 📫 Support
 
-- Open an [issue](https://github.com/olibartfast/multi_object_tracking/issues) for bug reports or feature requests
+- Open an [issue](https://github.com/olibartfast/vision-tracking/issues) for bug reports or feature requests
 - Contributions, corrections, and suggestions are welcome
 
 ## 📄 License
