@@ -1,11 +1,11 @@
 version: '3.8'
 
 services:
-  multi-object-tracking:
+  vision-tracking:
     build:
       context: .
       dockerfile: Dockerfile
-    image: multi-object-tracking:latest
+    image: vision-tracking:latest
     runtime: nvidia
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
@@ -19,11 +19,7 @@ services:
       - ./trackers/BoTSORT/config:/app/config
     # Example command - customize as needed
     command: >
-      --link=/app/videos/input.mp4
-      --tracker=BoTSORT
-      --labels=/app/coco.names
-      --model_path=/app/models/your-model.onnx
-      --class=car,person
+      --link=/app/videos/input.mp4 --tracker=BoTSORT --labels=/app/coco.names --model_path=/app/models/your-model.onnx --class=car,person
     # If you need to display the output, you can add X11 forwarding
     # environment:
     #   - DISPLAY=${DISPLAY}

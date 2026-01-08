@@ -1,12 +1,12 @@
 #!/bin/bash
 # Build the CPU image
-# docker build -f Dockerfile.cpu -t multi-object-tracking:cpu .
+# docker build -f Dockerfile.cpu -t vision-tracking:cpu .
 
 # Run without GPU
 docker run --rm \
   -v $(pwd)/models:/app/models \
   -v $(pwd)/videos:/app/videos \
-  multi-object-tracking:cpu \
+  vision-tracking:cpu \
   --link=/app/videos/input.mp4 \
   --tracker=SORT \
   --labels=/app/coco.names \

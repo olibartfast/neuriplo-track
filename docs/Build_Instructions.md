@@ -127,12 +127,12 @@ cd /path/to/object-detection-inference
 
 ### Standard Build
 ```bash
-docker build -t multi-object-tracking:latest .
+docker build -t vision-tracking:latest .
 ```
 
 ### With Specific Backend
 ```bash
-docker build -t multi-object-tracking:onnxruntime \
+docker build -t vision-tracking:onnxruntime \
     --build-arg BACKEND=ONNX_RUNTIME .
 ```
 

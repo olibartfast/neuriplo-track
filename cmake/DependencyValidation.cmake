@@ -1,4 +1,4 @@
-# Dependency validation and setup utilities for multi-object-tracking project
+# Dependency validation and setup utilities for vision-tracking project
 # This module provides functions to validate and setup dependencies
 
 include(CheckCXXSourceCompiles)

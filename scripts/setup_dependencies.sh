@@ -69,7 +69,7 @@ check_system_dependencies() {
 show_usage() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
-    echo "This script checks system dependencies for the multi-object-tracking project."
+    echo "This script checks system dependencies for the vision-tracking project."
     echo "For inference backend setup (ONNX Runtime, TensorRT, etc.), please refer to:"
     echo "https://github.com/olibartfast/object-detection-inference#-requirements"
     echo ""

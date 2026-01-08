@@ -51,7 +51,7 @@ sudo apt update && sudo apt install -y libopencv-dev libgoogle-glog-dev libeigen
 
 ## 🏗 Building
 
-### Complete Build (Library + Application)
+### Build 
 ```bash
 mkdir build && cd build
 cmake -DDEFAULT_BACKEND=<backend> -DCMAKE_BUILD_TYPE=Release ..
@@ -160,7 +160,7 @@ See [object-detection-inference documentation](https://github.com/olibartfast/ob
 
 ### Building Image
 ```bash
-docker build --rm -t multi-object-tracking:latest -f Dockerfile .
+docker build --rm -t vision-tracking:latest -f Dockerfile .
 ```
 
 ### Running Container

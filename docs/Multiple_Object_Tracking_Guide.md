@@ -603,6 +603,6 @@ Multiple Object Tracking remains a dynamic field with ample space for innovation
 - [MOTChallenge Evaluation](https://github.com/JonathonLuiten/TrackEval)
 
 ### Additional Resources
-- [Papers With Code - MOT](https://paperswithcode.com/task/multi-object-tracking)
+- [Papers With Code - MOT](https://paperswithcode.com/task/vision-tracking)
 - [Awesome Multiple Object Tracking](https://github.com/luanshiyinyang/awesome-multiple-object-tracking)
 - [MOT Evaluation Metrics Explained](https://github.com/cheind/py-motmetrics)

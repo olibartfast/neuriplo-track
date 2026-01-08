@@ -1,11 +1,11 @@
 version: '3.8'
 
 services:
-  multi-object-tracking-cpu:
+  vision-tracking-cpu:
     build:
       context: .
       dockerfile: Dockerfile.cpu
-    image: multi-object-tracking:cpu
+    image: vision-tracking:cpu
     volumes:
       # Mount your models directory
       - ./models:/app/models
