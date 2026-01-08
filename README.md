@@ -12,7 +12,7 @@ C++ framework for multi-object tracking, integrating state-of-the-art tracking a
 - **Multiple Detection Models**: YOLO series (v4-v12), RT-DETR, D-FINE, and more
 - **Modular Architecture**: Trackers library can be built independently
 - **Docker Deployment Ready**: Container support for easy deployment
-- **Fetched Dependencies**: Bundles [object-detection-inference](https://github.com/olibartfast/object-detection-inference) (and embedded [Neuriplo](https://github.com/olibartfast/neuriplo)) plus ByteTrack via FetchContent
+- **Fetched Dependencies**: Bundles [object-detection-inference](https://github.com/olibartfast/object-detection-inference) (and embedded [Neuriplo](https://github.com/olibartfast/neuriplo)) plus ByteTrack via FetchContent. All the fetched dependencies will be downloaded inside the `build/_deps` directory.
 
 ## 🔧 Requirements
 
