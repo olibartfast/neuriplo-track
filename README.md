@@ -58,13 +58,6 @@ cmake -DDEFAULT_BACKEND=<backend> -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
 
-### Library-Only Build
-```bash
-mkdir build && cd build
-cmake -DBUILD_ONLY_LIB=ON -DDEFAULT_BACKEND=<backend> -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
-```
-
 ### Inference Backend Options
 Replace `<backend>` with:
 - `OPENCV_DNN` (default, no additional setup required)
