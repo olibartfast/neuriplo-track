@@ -5,6 +5,9 @@ project(vision-tracking)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Generate compile_commands.json to make it easier to work with clangd
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Include centralized version management
 include(cmake/versions.cmake)
 
@@ -116,7 +119,6 @@ FetchContent_MakeAvailable(object-detection-inference)
 message(STATUS "object-detection-inference_SOURCE_DIR: ${object-detection-inference_SOURCE_DIR}")
 
 # Fetch ByteTrack with specific version
-set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/trackers/ByteTrack)
 set(BUILD_BYTETRACK_TEST OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     ByteTrack
