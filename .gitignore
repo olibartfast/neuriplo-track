@@ -1,4 +1,5 @@
 build
+.cache
 trackers/BoTSORT/models
 venv
 TODO.md

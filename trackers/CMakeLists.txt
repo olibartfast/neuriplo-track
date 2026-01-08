@@ -35,8 +35,6 @@ target_include_directories(trackers PUBLIC
     ${bytetrack_SOURCE_DIR}/include
     ${OpenCV_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIR}
-    ${object-detection-inference_SOURCE_DIR}/detectors/inc
-    ${object-detection-inference_SOURCE_DIR}/common
     ${ONNX_RUNTIME_DIR}/include
 )
 
@@ -47,4 +45,5 @@ target_link_libraries(trackers PUBLIC
     bytetrack
     Eigen3::Eigen
     ${ONNX_RUNTIME_DIR}/lib/libonnxruntime.so
+    vision-core::vision-core
 )

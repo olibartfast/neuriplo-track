@@ -78,14 +78,14 @@ cmake -DDEFAULT_BACKEND=OPENCV_DNN ..
 ```bash
 cmake -DDEFAULT_BACKEND=ONNX_RUNTIME ..
 ```
-- Setup required: See [object-detection-inference docs](https://github.com/olibartfast/object-detection-inference)
+- Setup required: See [neuriplo docs](https://github.com/olibartfast/neuriplo)
 - CPU and GPU support available
 
 #### TensorRT
 ```bash
 cmake -DDEFAULT_BACKEND=TENSORRT ..
 ```
-- Setup required: See [object-detection-inference docs](https://github.com/olibartfast/object-detection-inference)
+- Setup required: See [neuriplo docs](https://github.com/olibartfast/neuriplo)
 - Best performance on NVIDIA GPUs
 - Requires TensorRT installation
 
@@ -93,24 +93,24 @@ cmake -DDEFAULT_BACKEND=TENSORRT ..
 ```bash
 cmake -DDEFAULT_BACKEND=LIBTORCH ..
 ```
-- Setup required: See [object-detection-inference docs](https://github.com/olibartfast/object-detection-inference)
+- Setup required: See [neuriplo docs](https://github.com/olibartfast/neuriplo)
 - PyTorch backend for inference
 
 #### OpenVINO
 ```bash
 cmake -DDEFAULT_BACKEND=OPENVINO ..
 ```
-- Setup required: See [object-detection-inference docs](https://github.com/olibartfast/object-detection-inference)
+- Setup required: See [neuriplo docs](https://github.com/olibartfast/neuriplo)
 - Optimized for Intel hardware
 
 ## Inference Backend Setup
 
-For detailed instructions on setting up specific inference backends, refer to the [object-detection-inference documentation](https://github.com/olibartfast/object-detection-inference#-requirements).
+For detailed instructions on setting up specific inference backends, refer to the [neuriplo documentation](https://github.com/olibartfast/neuriplo#-requirements).
 
 ### Quick Backend Setup
 ```bash
 # ONNX Runtime
-cd /path/to/object-detection-inference
+cd /path/to/neuriplo
 ./scripts/setup_dependencies.sh --backend onnx_runtime
 
 # TensorRT
@@ -177,7 +177,7 @@ cmake ..
 #### 3. Linking Errors
 ```bash
 # Solution: Ensure inference backend is properly setup
-# Follow backend-specific setup instructions from object-detection-inference
+# Follow backend-specific setup instructions from neuriplo
 ```
 
 #### 4. CUDA/GPU Issues
@@ -192,7 +192,7 @@ cmake -DDEFAULT_BACKEND=ONNX_RUNTIME ..
 
 ### Getting More Help
 
-- Check [object-detection-inference issues](https://github.com/olibartfast/object-detection-inference/issues)
+- Check [neuriplo issues](https://github.com/olibartfast/neuriplo/issues)
 - Open an issue on this repository
 - Review CMake output for specific error messages
 
@@ -203,16 +203,20 @@ cmake -DDEFAULT_BACKEND=ONNX_RUNTIME ..
 Edit `versions.env` to specify custom versions:
 ```bash
 # versions.env
-OBJECT_DETECTION_INFERENCE_VERSION="v1.2.3"
+# versions.env
+VISION_CORE_VERSION="v1.0.0"
+NEURIPLO_VERSION="v1.0.0"
 BYTETRACK_VERSION="custom-branch"
 ```
 
 ### Using Local Dependencies
 
-To use a local version of object-detection-inference:
+To use a local version of vision-core or neuriplo:
 ```cmake
 # In CMakeLists.txt, comment out FetchContent and add:
-add_subdirectory(/path/to/object-detection-inference detectors)
+# In CMakeLists.txt, comment out FetchContent and add:
+add_subdirectory(/path/to/vision-core vision-core)
+add_subdirectory(/path/to/neuriplo neuriplo)
 ```
 
 ### Parallel Builds

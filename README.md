@@ -3,16 +3,16 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/std/the-standard)
 
-C++ framework for multi-object tracking, integrating state-of-the-art tracking algorithms (SORT, ByteTrack, BoTSORT) with the [object-detection-inference](https://github.com/olibartfast/object-detection-inference) library for real-time object detection and tracking.
+C++ framework for multi-object tracking, integrating state-of-the-art tracking algorithms (SORT, ByteTrack, BoTSORT) with the [vision-core](https://github.com/olibartfast/vision-core) and [neuriplo](https://github.com/olibartfast/neuriplo) libraries for real-time object detection and tracking.
 
 ## 🚀 Key Features
 
 - **Multiple Tracking Algorithms**: SORT, ByteTrack, and BoTSORT
-- **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, LibTorch, OpenVINO (via [object-detection-inference](https://github.com/olibartfast/object-detection-inference))
+- **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, LibTorch, OpenVINO (via [neuriplo](https://github.com/olibartfast/neuriplo))
 - **Multiple Detection Models**: YOLO series (v4-v12), RT-DETR, D-FINE, and more
 - **Modular Architecture**: Trackers library can be built independently
 - **Docker Deployment Ready**: Container support for easy deployment
-- **Fetched Dependencies**: Bundles [object-detection-inference](https://github.com/olibartfast/object-detection-inference) (and embedded [Neuriplo](https://github.com/olibartfast/neuriplo)) plus ByteTrack via FetchContent. All the fetched dependencies will be downloaded inside the `build/_deps` directory.
+- **Fetched Dependencies**: Bundles [vision-core](https://github.com/olibartfast/vision-core) (common tasks/types), [neuriplo](https://github.com/olibartfast/neuriplo) (inference engine), and ByteTrack via FetchContent. All the fetched dependencies will be downloaded inside the `build/_deps` directory.
 
 ## 🔧 Requirements
 
@@ -35,10 +35,11 @@ C++ framework for multi-object tracking, integrating state-of-the-art tracking a
 ### Dependency Management
 
 This project automatically fetches:
-- **[object-detection-inference](https://github.com/olibartfast/object-detection-inference)**: For object detection
+- **[vision-core](https://github.com/olibartfast/vision-core)**: Core computer vision tasks and types
+- **[neuriplo](https://github.com/olibartfast/neuriplo)**: Unified neural inference interface
 - **[ByteTrack-cpp](https://github.com/Vertical-Beach/ByteTrack-cpp)**: ByteTrack implementation
 
-For inference backend setup (ONNX Runtime, TensorRT, etc.), refer to the [object-detection-inference setup guide](https://github.com/olibartfast/object-detection-inference#-requirements).
+For inference backend setup (ONNX Runtime, TensorRT, etc.), refer to the [neuriplo setup guide](https://github.com/olibartfast/neuriplo#-requirements).
 
 #### Quick Setup
 ```bash
@@ -46,7 +47,7 @@ For inference backend setup (ONNX Runtime, TensorRT, etc.), refer to the [object
 sudo apt update && sudo apt install -y libopencv-dev libgoogle-glog-dev libeigen3-dev
 
 # Setup inference backend (if not using OpenCV DNN)
-# See object-detection-inference documentation for backend-specific setup
+# See neuriplo documentation for backend-specific setup
 ```
 
 ## 🏗 Building
@@ -67,7 +68,7 @@ Replace `<backend>` with:
 - `OPENVINO`
 - `LIBTENSORFLOW`
 
-See [object-detection-inference documentation](https://github.com/olibartfast/object-detection-inference) for backend setup details.
+See [neuriplo documentation](https://github.com/olibartfast/neuriplo) for backend setup details.
 
 ## 💻 Usage
 

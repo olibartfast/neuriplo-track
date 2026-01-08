@@ -948,6 +948,7 @@ public:
 ```cpp
 #include "TrackerFactory.hpp"
 #include "ConfigManager.hpp"
+#include <vision-core/core/task_factory.hpp>
 #include <opencv2/opencv.hpp>
 
 int main(int argc, char** argv) {
@@ -965,15 +966,20 @@ int main(int argc, char** argv) {
             return -1;
         }
         
-        // Initialize detector (assuming YOLO)
-        YOLODetector detector("models/yolo.onnx");
+        // Initialize detector using vision-core
+        vision_core::ModelInfo model_info;
+        model_info.addInput("images", {1, 3, 640, 640}); // Example shape
+        auto detector = vision_core::TaskFactory::createTaskInstance("yolov8", model_info);
         
         cv::Mat frame;
         int frame_count = 0;
         
         while (cap.read(frame)) {
-            // Object detection
-            auto detections = detector.detect(frame);
+            // Object detection (simplified for example)
+            // In real app, you would use an InferenceInterface here
+            auto preprocessed = detector->preprocess({frame});
+            // ... inference ...
+            // auto detections = detector->postprocess(frame.size(), tensors);
             
             // Tracking update
             auto tracked_objects = tracker->update(detections, frame);
@@ -1034,12 +1040,12 @@ public:
         }
     }
     
-    void processCamera(size_t camera_id, YOLODetector& detector) {
+    void processCamera(size_t camera_id, vision_core::TaskInterface& detector) {
         cv::Mat frame;
         
         while (cameras[camera_id].read(frame)) {
-            // Detection
-            auto detections = detector.detect(frame);
+            // Detection (pseudocode for clarity)
+            // auto detections = detector.postprocess(...);
             
             // Tracking
             auto tracked_objects = trackers[camera_id]->update(detections, frame);
@@ -1050,13 +1056,16 @@ public:
     }
     
     void run() {
-        YOLODetector detector("models/yolo.onnx");
+        // Setup detector
+        vision_core::ModelInfo info;
+        // ... fill info ...
+        auto detector = vision_core::TaskFactory::createTaskInstance("yolov8", info);
         std::vector<std::thread> threads;
         
         // Start thread for each camera
         for (size_t i = 0; i < cameras.size(); ++i) {
             threads.emplace_back(&MultiCameraTracker::processCamera, 
-                               this, i, std::ref(detector));
+                               this, i, std::ref(*detector));
         }
         
         // Wait for all threads

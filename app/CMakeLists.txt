@@ -19,10 +19,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../trackers
     ${CMAKE_CURRENT_SOURCE_DIR}/../trackers/SORT
     ${CMAKE_CURRENT_SOURCE_DIR}/../trackers/BoTSORT/include
-    ${object-detection-inference_SOURCE_DIR}/detectors/inc
-    ${object-detection-inference_SOURCE_DIR}/detectors/src
-    ${object-detection-inference_SOURCE_DIR}/detectors/src/models
-    ${object-detection-inference_SOURCE_DIR}/common
     ${neuriplo_SOURCE_DIR}/include
     ${neuriplo_SOURCE_DIR}/src
     ${neuriplo_SOURCE_DIR}/backends
@@ -37,7 +33,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME} PRIVATE
     glog::glog
     ${OpenCV_LIBS}
-    detectors
+    vision-core::vision-core
     neuriplo
     trackers
     Eigen3::Eigen

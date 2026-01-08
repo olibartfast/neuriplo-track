@@ -108,15 +108,23 @@ message(STATUS "Found ONNX Runtime: ${ONNXRUNTIME_LIBRARY}")
 # Provide a consistent variable name for downstream targets
 set(ONNX_RUNTIME_DIR ${ONNXRUNTIME_DIR} CACHE PATH "ONNX Runtime root directory")
 
-# Fetch object-detection-inference with specific version
-set(USE_GSTREAMER OFF CACHE BOOL "" FORCE)
+# Fetch vision-core
 FetchContent_Declare(
-    object-detection-inference
-    GIT_REPOSITORY https://github.com/olibartfast/object-detection-inference.git
-    GIT_TAG        ${OBJECT_DETECTION_INFERENCE_VERSION}
+    vision-core
+    GIT_REPOSITORY https://github.com/olibartfast/vision-core.git
+    GIT_TAG        ${VISION_CORE_VERSION}
 )
-FetchContent_MakeAvailable(object-detection-inference)
-message(STATUS "object-detection-inference_SOURCE_DIR: ${object-detection-inference_SOURCE_DIR}")
+FetchContent_MakeAvailable(vision-core)
+message(STATUS "vision-core_SOURCE_DIR: ${vision-core_SOURCE_DIR}")
+
+# Fetch neuriplo
+FetchContent_Declare(
+    neuriplo
+    GIT_REPOSITORY https://github.com/olibartfast/neuriplo.git
+    GIT_TAG        ${NEURIPLO_VERSION}
+)
+FetchContent_MakeAvailable(neuriplo)
+message(STATUS "neuriplo_SOURCE_DIR: ${neuriplo_SOURCE_DIR}")
 
 # Fetch ByteTrack with specific version
 set(BUILD_BYTETRACK_TEST OFF CACHE BOOL "" FORCE)
