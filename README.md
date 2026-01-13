@@ -5,7 +5,7 @@
 
 C++ framework for multi-object tracking, integrating state-of-the-art tracking algorithms (SORT, ByteTrack, BoTSORT) with the [vision-core](https://github.com/olibartfast/vision-core) and [neuriplo](https://github.com/olibartfast/neuriplo) libraries for real-time object detection and tracking.
 
-## 🚀 Key Features
+## Key Features
 
 - **Multiple Tracking Algorithms**: SORT, ByteTrack, and BoTSORT
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, LibTorch, OpenVINO (via [neuriplo](https://github.com/olibartfast/neuriplo))
@@ -14,7 +14,7 @@ C++ framework for multi-object tracking, integrating state-of-the-art tracking a
 - **Docker Deployment Ready**: Container support for easy deployment
 - **Fetched Dependencies**: Bundles [vision-core](https://github.com/olibartfast/vision-core) (common tasks/types), [neuriplo](https://github.com/olibartfast/neuriplo) (inference engine), and ByteTrack via FetchContent. All the fetched dependencies will be downloaded inside the `build/_deps` directory.
 
-## 🔧 Requirements
+## Requirements
 
 ### Core Dependencies
 - CMake (≥ 3.20)
@@ -50,7 +50,7 @@ sudo apt update && sudo apt install -y libopencv-dev libgoogle-glog-dev libeigen
 # See neuriplo documentation for backend-specific setup
 ```
 
-## 🏗 Building
+## Building
 
 ### Build 
 ```bash
@@ -70,7 +70,7 @@ Replace `<backend>` with:
 
 See [neuriplo documentation](https://github.com/olibartfast/neuriplo) for backend setup details.
 
-## 💻 Usage
+## Usage
 
 ### Command Line Options
 
@@ -157,7 +157,7 @@ See [neuriplo documentation](https://github.com/olibartfast/neuriplo) for backen
 ./vision-tracking --help
 ```
 
-## 🐳 Docker Deployment
+## Docker Deployment
 
 ### Building Image
 ```bash
@@ -208,28 +208,24 @@ vision-tracking/
 
 ```
 
-## 📚 Documentation
+## Documentation
 
 - [System Architecture](docs/System_Architecture.md)
 - [Tracking Algorithms](docs/Tracking_Algorithms.md)
 - [Code Examples](docs/Code_Examples.md)
 
-## 📺 Video Demo
+## Video Demo
 
 [YOLO11x + BoTSORT Tracker Demo](https://www.youtube.com/watch?v=jYtL8RP6K3s)
 
-## 🙏 Acknowledgments
+## Acknowledgments
 - [SORT](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tracking/cpp_inference/yoloSort) - Simple Online and Realtime Tracking
 - [ByteTrack](https://github.com/Vertical-Beach/ByteTrack-cpp) - ByteTrack C++ implementation
 - [BoTSORT](https://github.com/viplix3/BoTSORT-cpp) - BoTSORT C++ implementation
 
-## 📫 Support
+## Support
 
 - Open an [issue](https://github.com/olibartfast/vision-tracking/issues) for bug reports or feature requests
 - Contributions, corrections, and suggestions are welcome
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 
