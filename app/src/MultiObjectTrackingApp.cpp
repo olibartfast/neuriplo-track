@@ -4,6 +4,7 @@
 #include "CommandLineParser.hpp"
 #include "SortWrapper.hpp"
 #include "utils.hpp"
+#include "vision-core/core/task_config.hpp"
 #include "vision-core/core/task_factory.hpp"
 #include <filesystem>
 #include <glog/logging.h>
@@ -53,8 +54,10 @@ MultiObjectTrackingApp::MultiObjectTrackingApp(const AppConfig &config)
       model_info.addOutput(output.name, output.shape, output.batch_size);
     }
     // Setup detector (use vision_core::TaskFactory)
+    vision_core::TaskConfig task_config;
+    task_config.confidence_threshold = config_.confidenceThreshold;
     detector_ = vision_core::TaskFactory::createTaskInstance(
-        config_.detectorType, model_info);
+        config_.detectorType, model_info, task_config);
     if (!detector_) {
       throw std::runtime_error("Can't setup a detector: " +
                                config_.detectorType);
@@ -123,69 +126,18 @@ void MultiObjectTrackingApp::processVideo(const std::string &source) {
   int frameCount = 0;
 
   while (cap.read(frame)) {
-    // Run detection
-    // Run detection
-    // 1. Preprocess
     auto preprocessed_data = detector_->preprocess({frame});
+    const auto [outputs, shapes] = engine_->get_infer_results(preprocessed_data);
 
-    // 2. Inference (Convert preprocessed data to cv::Mat input blob for
-    // InferenceInterface) Note: InferenceInterface expects a cv::Mat. We assume
-    // the preprocessed data is contiguous. We create a cv::Mat wrapping the
-    // data. This depends on input dimensions. For simplicity/robustness with
-    // current InferenceInterface, we assume it can handle the raw data if we
-    // pass it correctly. However, standard
-    // InferenceInterface::get_infer_results expects a blob. Let's create a blob
-    // from the preprocessed data directly.
-
-    // For now, we'll construct a cv::Mat from the vector.
-    // Assuming 1 input tensor for now (index 0).
-    auto &input_vec = preprocessed_data[0];
-
-    // We need to know shape to verify, but we can pass 1D row vector if backend
-    // supports it, or we need to reshape. get_infer_results implementation
-    // depends on backend. Most OpenCV-based backends expect properly shaped
-    // Mat. BUT neuriplo might actually expect the raw image if we use its own
-    // preprocessing? NO, we are using vision-core preprocessing.
-
-    // Let's inspect shapes from model info (converted from metadata)
-    auto metadata = engine_->get_inference_metadata();
-    const auto &inputs = metadata.getInputs();
-    if (inputs.empty())
-      throw std::runtime_error("No input shapes in inference metadata");
-    auto &input_shape_vec = inputs[0].shape; // vector<int64_t>
-
-    std::vector<int> input_shape;
-    for (auto val : input_shape_vec)
-      input_shape.push_back(static_cast<int>(val));
-
-    // Create float mat (most models) or u8? Preprocessor usually outputs float
-    // if normalized, but signature says uint8_t... Wait,
-    // TaskInterface::preprocess returns vector<uint8_t>. That means it contains
-    // the raw bytes of the processed tensor (could be float data in bytes).
-
-    cv::Mat input_blob(input_shape.size(), input_shape.data(), CV_32F,
-                       input_vec.data());
-    // WARNING: We are assuming CV_32F. If preprocessor outputs INT8/UINT8, this
-    // is wrong. But most detection models are FP32. vision-core preprocessors
-    // usually cast to float and normalize. The uint8_t vector is just a byte
-    // container.
-
-    const auto [outputs, shapes] = engine_->get_infer_results(input_blob);
-
-    // 3. Convert InferenceInterface output tuple to vision_core::Tensor
     std::vector<vision_core::Tensor> tensors;
     for (size_t i = 0; i < outputs.size(); ++i) {
       vision_core::Tensor tensor;
       tensor.shape = shapes[i];
-
-      // Convert TensorElement variant to raw bytes/specific type or keep as
-      // variant if Tensor supports it vision_core::Tensor definition:
-      // std::vector<TensorElement> data; So we can just copy.
       tensor.data = outputs[i];
       tensors.push_back(tensor);
     }
 
-    // 4. Postprocess
+
     auto results = detector_->postprocess(frame.size(), tensors);
 
     // Extract Detections
