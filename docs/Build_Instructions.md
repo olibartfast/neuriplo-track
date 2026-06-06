@@ -26,8 +26,8 @@ sudo apt install -y \
 ### Quick Start
 ```bash
 # Clone repository
-git clone https://github.com/olibartfast/vision-tracking.git
-cd vision-tracking
+git clone https://github.com/olibartfast/neuriplo-track.git
+cd neuriplo-track
 
 # Check dependencies
 ./scripts/setup_dependencies.sh
@@ -127,12 +127,12 @@ cd /path/to/neuriplo
 
 ### Standard Build
 ```bash
-docker build -t vision-tracking:latest .
+docker build -t neuriplo-track:latest .
 ```
 
 ### With Specific Backend
 ```bash
-docker build -t vision-tracking:onnxruntime \
+docker build -t neuriplo-track:onnxruntime \
     --build-arg BACKEND=ONNX_RUNTIME .
 ```
 
@@ -140,12 +140,12 @@ docker build -t vision-tracking:onnxruntime \
 
 ### Check Executable
 ```bash
-./build/vision-tracking --help
+./build/neuriplo-track --help
 ```
 
 ### Run Simple Test
 ```bash
-./build/vision-tracking \
+./build/neuriplo-track \
     --type=yolov8 \
     --source=/path/to/video.mp4 \
     --labels=coco.names \

@@ -27,7 +27,7 @@ sudo systemctl restart docker
 Build the Docker image from the project root directory:
 
 ```bash
-docker build -t vision-tracking:latest .
+docker build -t neuriplo-track:latest .
 ```
 
 This will create a multi-stage Docker image with all necessary dependencies.
@@ -40,7 +40,7 @@ This will create a multi-stage Docker image with all necessary dependencies.
 docker run --rm --gpus all \
   -v $(pwd)/models:/app/models \
   -v $(pwd)/videos:/app/videos \
-  vision-tracking:latest \
+  neuriplo-track:latest \
   --link=/app/videos/your-video.mp4 \
   --tracker=BoTSORT \
   --labels=/app/coco.names \
@@ -68,7 +68,7 @@ docker run --rm --gpus all \
   -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
   -v $(pwd)/models:/app/models \
   -v $(pwd)/videos:/app/videos \
-  vision-tracking:latest \
+  neuriplo-track:latest \
   --link=/app/videos/your-video.mp4 \
   --tracker=BoTSORT \
   --labels=/app/coco.names \
@@ -102,7 +102,7 @@ xhost -local:docker
 docker run --rm --gpus all \
   -v $(pwd)/models:/app/models \
   -v $(pwd)/videos:/app/videos \
-  vision-tracking:latest \
+  neuriplo-track:latest \
   --link=/app/videos/input.mp4 \
   --tracker=SORT \
   --labels=/app/coco.names \
@@ -115,7 +115,7 @@ docker run --rm --gpus all \
 docker run --rm --gpus all \
   -v $(pwd)/models:/app/models \
   -v $(pwd)/videos:/app/videos \
-  vision-tracking:latest \
+  neuriplo-track:latest \
   --link=/app/videos/input.mp4 \
   --tracker=ByteTrack \
   --labels=/app/coco.names \
@@ -129,7 +129,7 @@ docker run --rm --gpus all \
   -v $(pwd)/models:/app/models \
   -v $(pwd)/videos:/app/videos \
   -v $(pwd)/trackers/BoTSORT/config:/app/config \
-  vision-tracking:latest \
+  neuriplo-track:latest \
   --link=/app/videos/input.mp4 \
   --tracker=BoTSORT \
   --labels=/app/coco.names \
@@ -145,7 +145,7 @@ docker run --rm --gpus all \
 ```bash
 docker run --rm --gpus all \
   -v $(pwd)/models:/app/models \
-  vision-tracking:latest \
+  neuriplo-track:latest \
   --link=rtsp://192.168.1.100:554/stream \
   --tracker=ByteTrack \
   --labels=/app/coco.names \
@@ -169,7 +169,7 @@ docker run --rm --gpus all \
   --user $(id -u):$(id -g) \
   -v $(pwd)/models:/app/models \
   -v $(pwd)/videos:/app/videos \
-  vision-tracking:latest [...]
+  neuriplo-track:latest [...]
 ```
 
 ### Display Issues
@@ -189,7 +189,7 @@ If you don't have a GPU or want to run on CPU only, use the dedicated CPU Docker
 ### Building the CPU Image
 
 ```bash
-docker build -f Dockerfile.cpu -t vision-tracking:cpu .
+docker build -f Dockerfile.cpu -t neuriplo-track:cpu .
 ```
 
 ### Running with CPU Only
@@ -198,7 +198,7 @@ docker build -f Dockerfile.cpu -t vision-tracking:cpu .
 docker run --rm \
   -v $(pwd)/models:/app/models \
   -v $(pwd)/videos:/app/videos \
-  vision-tracking:cpu \
+  neuriplo-track:cpu \
   --link=/app/videos/your-video.mp4 \
   --tracker=BoTSORT \
   --labels=/app/coco.names \

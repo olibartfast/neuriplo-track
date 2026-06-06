@@ -430,7 +430,7 @@ class GlobalMotionCompensation {
 ```bash
 # Clone repository
 git clone <repository-url>
-cd vision-tracking
+cd neuriplo-track
 
 # Build with CMake
 rm -rf build
@@ -441,7 +441,7 @@ cmake --build build --config Release
 ### 8.2 Execution
 
 ```bash
-./vision-tracking \
+./neuriplo-track \
     --link=<video_path_or_stream> \
     --tracker=<SORT|ByteTrack|BoTSORT> \
     --labels=<labels_file> \
@@ -603,6 +603,6 @@ Multiple Object Tracking remains a dynamic field with ample space for innovation
 - [MOTChallenge Evaluation](https://github.com/JonathonLuiten/TrackEval)
 
 ### Additional Resources
-- [Papers With Code - MOT](https://paperswithcode.com/task/vision-tracking)
+- [Papers With Code - MOT](https://paperswithcode.com/task/neuriplo-track)
 - [Awesome Multiple Object Tracking](https://github.com/luanshiyinyang/awesome-multiple-object-tracking)
 - [MOT Evaluation Metrics Explained](https://github.com/cheind/py-motmetrics)

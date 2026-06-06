@@ -69,7 +69,7 @@ ENV LD_LIBRARY_PATH=/opt/onnxruntime/lib:${LD_LIBRARY_PATH}
 WORKDIR /app
 
 # Copy the built executable and necessary files from builder
-COPY --from=builder /workspace/build/vision-tracking /app/
+COPY --from=builder /workspace/build/neuriplo-track /app/
 COPY --from=builder /workspace/coco.names /app/
 COPY --from=builder /workspace/trackers/BoTSORT/config /app/config/
 
@@ -77,7 +77,7 @@ COPY --from=builder /workspace/trackers/BoTSORT/config /app/config/
 RUN mkdir -p /app/models /app/data /app/labels
 
 # Set the entrypoint
-ENTRYPOINT ["/app/vision-tracking"]
+ENTRYPOINT ["/app/neuriplo-track"]
 
 # Default command (can be overridden)
 CMD ["--help"]

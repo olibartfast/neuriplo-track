@@ -75,7 +75,7 @@ See [neuriplo documentation](https://github.com/olibartfast/neuriplo) for backen
 ### Command Line Options
 
 ```bash
-./vision-tracking \
+./neuriplo-track \
   --type=<model_type> \
   --source=<input_source> \
   --labels=<labels_file> \
@@ -116,7 +116,7 @@ See [neuriplo documentation](https://github.com/olibartfast/neuriplo) for backen
 
 #### Basic tracking with SORT
 ```bash
-./vision-tracking \
+./neuriplo-track \
   --type=yolo \
   --source=video.mp4 \
   --labels=coco.names \
@@ -127,7 +127,7 @@ See [neuriplo documentation](https://github.com/olibartfast/neuriplo) for backen
 
 #### Advanced tracking with BoTSORT and GPU
 ```bash
-./vision-tracking \
+./neuriplo-track \
   --type=yolo \
   --source=rtsp://camera_ip:port/stream \
   --labels=coco.names \
@@ -142,7 +142,7 @@ See [neuriplo documentation](https://github.com/olibartfast/neuriplo) for backen
 
 #### ByteTrack with TensorRT
 ```bash
-./vision-tracking \
+./neuriplo-track \
   --type=yolo \
   --source=video.mp4 \
   --labels=coco.names \
@@ -154,14 +154,14 @@ See [neuriplo documentation](https://github.com/olibartfast/neuriplo) for backen
 
 ### Help
 ```bash
-./vision-tracking --help
+./neuriplo-track --help
 ```
 
 ## Docker Deployment
 
 ### Building Image
 ```bash
-docker build --rm -t vision-tracking:latest -f Dockerfile .
+docker build --rm -t neuriplo-track:latest -f Dockerfile .
 ```
 
 ### Running Container
@@ -170,7 +170,7 @@ docker run --gpus all --rm \
   -v $(pwd)/data:/app/data \
   -v $(pwd)/models:/models \
   -v $(pwd)/labels:/labels \
-  vision-tracking:latest \
+  neuriplo-track:latest \
   --type=yolov8 \
   --source=/app/data/video.mp4 \
   --labels=/labels/coco.names \
@@ -183,7 +183,7 @@ docker run --gpus all --rm \
 ## 📁 Project Structure
 
 ```
-vision-tracking/
+neuriplo-track/
 ├── app/                      # Application code
 │   ├── inc/                  # Application headers
 │   ├── src/                  # Application source files
@@ -225,7 +225,7 @@ vision-tracking/
 
 ## Support
 
-- Open an [issue](https://github.com/olibartfast/vision-tracking/issues) for bug reports or feature requests
+- Open an [issue](https://github.com/olibartfast/neuriplo-track/issues) for bug reports or feature requests
 - Contributions, corrections, and suggestions are welcome
 
 
