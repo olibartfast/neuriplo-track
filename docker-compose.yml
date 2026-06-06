@@ -1,11 +1,11 @@
 version: '3.8'
 
 services:
-  vision-tracking:
+  neuriplo-track:
     build:
       context: .
       dockerfile: Dockerfile
-    image: vision-tracking:latest
+    image: neuriplo-track:latest
     runtime: nvidia
     environment:
       - NVIDIA_VISIBLE_DEVICES=all

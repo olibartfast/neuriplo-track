@@ -1,4 +1,4 @@
-# Version management for vision-tracking project dependencies
+# Version management for neuriplo-track project dependencies
 # This file centralizes all version information for external dependencies
 
 # Function to read versions from .env file

@@ -104,7 +104,7 @@ void MultiObjectTrackingApp::setupLogging(const std::string &log_folder) {
 
   FLAGS_log_dir = log_folder;
   FLAGS_alsologtostderr = true;
-  google::InitGoogleLogging("vision-tracking");
+  google::InitGoogleLogging("neuriplo-track");
 }
 
 void MultiObjectTrackingApp::processVideo(const std::string &source) {
