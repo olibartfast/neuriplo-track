@@ -4,8 +4,9 @@
 #include "CommandLineParser.hpp"
 #include "SortWrapper.hpp"
 #include "utils.hpp"
-#include "vision-core/core/task_config.hpp"
-#include "vision-core/core/task_factory.hpp"
+#include "neuriplo/tasks/core/opencv_interop.hpp"
+#include "neuriplo/tasks/core/task_config.hpp"
+#include "neuriplo/tasks/core/task_factory.hpp"
 #include <filesystem>
 #include <glog/logging.h>
 
@@ -39,10 +40,10 @@ MultiObjectTrackingApp::MultiObjectTrackingApp(const AppConfig &config)
                                config_.weights);
     }
 
-    // Adapter: Convert neuriplo::InferenceMetadata to vision_core::ModelInfo
+    // Adapter: Convert neuriplo::InferenceMetadata to neuriplo_tasks::ModelInfo
     auto metadata = engine_->get_inference_metadata();
 
-    vision_core::ModelInfo model_info;
+    neuriplo_tasks::ModelInfo model_info;
 
     // Map inputs
     for (const auto &input : metadata.getInputs()) {
@@ -53,10 +54,10 @@ MultiObjectTrackingApp::MultiObjectTrackingApp(const AppConfig &config)
     for (const auto &output : metadata.getOutputs()) {
       model_info.addOutput(output.name, output.shape, output.batch_size);
     }
-    // Setup detector (use vision_core::TaskFactory)
-    vision_core::TaskConfig task_config;
+    // Setup detector (use neuriplo_tasks::TaskFactory)
+    neuriplo_tasks::TaskConfig task_config;
     task_config.confidence_threshold = config_.confidenceThreshold;
-    detector_ = vision_core::TaskFactory::createTaskInstance(
+    detector_ = neuriplo_tasks::TaskFactory::createTaskInstance(
         config_.detectorType, model_info, task_config);
     if (!detector_) {
       throw std::runtime_error("Can't setup a detector: " +
@@ -129,9 +130,9 @@ void MultiObjectTrackingApp::processVideo(const std::string &source) {
     auto preprocessed_data = detector_->preprocess({frame});
     const auto [outputs, shapes] = engine_->get_infer_results(preprocessed_data);
 
-    std::vector<vision_core::Tensor> tensors;
+    std::vector<neuriplo_tasks::Tensor> tensors;
     for (size_t i = 0; i < outputs.size(); ++i) {
-      vision_core::Tensor tensor;
+      neuriplo_tasks::Tensor tensor;
       tensor.shape = shapes[i];
       tensor.data = outputs[i];
       tensors.push_back(tensor);
@@ -141,10 +142,10 @@ void MultiObjectTrackingApp::processVideo(const std::string &source) {
     auto results = detector_->postprocess(frame.size(), tensors);
 
     // Extract Detections
-    std::vector<vision_core::Detection> detections;
+    std::vector<neuriplo_tasks::Detection> detections;
     for (const auto &result : results) {
-      if (std::holds_alternative<vision_core::Detection>(result)) {
-        detections.push_back(std::get<vision_core::Detection>(result));
+      if (std::holds_alternative<neuriplo_tasks::Detection>(result)) {
+        detections.push_back(std::get<neuriplo_tasks::Detection>(result));
       }
     }
 
@@ -184,16 +185,17 @@ void MultiObjectTrackingApp::processVideo(const std::string &source) {
 }
 
 void MultiObjectTrackingApp::drawDetections(
-    cv::Mat &frame, const std::vector<vision_core::Detection> &detections) {
+    cv::Mat &frame, const std::vector<neuriplo_tasks::Detection> &detections) {
   for (const auto &detection : detections) {
     // Only draw detections for tracked classes
     if (config_.classesToTrackIds.find(static_cast<int>(detection.class_id)) !=
         config_.classesToTrackIds.end()) {
-      cv::rectangle(frame, detection.bbox, cv::Scalar(255, 255, 255), 2);
+      const cv::Rect bbox = neuriplo_tasks::toCvRect(detection.bbox);
+      cv::rectangle(frame, bbox, cv::Scalar(255, 255, 255), 2);
 
       std::string label = classes_[static_cast<int>(detection.class_id)];
       cv::putText(frame, label,
-                  cv::Point(detection.bbox.x, detection.bbox.y - 5),
+                  cv::Point(bbox.x, bbox.y - 5),
                   cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 2);
     }
   }

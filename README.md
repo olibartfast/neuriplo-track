@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/std/the-standard)
 
-C++ framework for multi-object tracking, integrating state-of-the-art tracking algorithms (SORT, ByteTrack, BoTSORT) with the [vision-core](https://github.com/olibartfast/vision-core) and [neuriplo](https://github.com/olibartfast/neuriplo) libraries for real-time object detection and tracking.
+C++ framework for multi-object tracking, integrating state-of-the-art tracking algorithms (SORT, ByteTrack, BoTSORT) with the [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks) and [neuriplo](https://github.com/olibartfast/neuriplo) libraries for real-time object detection and tracking.
 
 ## Key Features
 
@@ -12,7 +12,7 @@ C++ framework for multi-object tracking, integrating state-of-the-art tracking a
 - **Multiple Detection Models**: YOLO series (v4-v12), RT-DETR, D-FINE, and more
 - **Modular Architecture**: Trackers library can be built independently
 - **Docker Deployment Ready**: Container support for easy deployment
-- **Fetched Dependencies**: Bundles [vision-core](https://github.com/olibartfast/vision-core) (common tasks/types), [neuriplo](https://github.com/olibartfast/neuriplo) (inference engine), and ByteTrack via FetchContent. All the fetched dependencies will be downloaded inside the `build/_deps` directory.
+- **Fetched Dependencies**: Bundles [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks) (common tasks/types), [neuriplo](https://github.com/olibartfast/neuriplo) (inference engine), and ByteTrack via FetchContent. All the fetched dependencies will be downloaded inside the `build/_deps` directory.
 
 ## Requirements
 
@@ -35,7 +35,7 @@ C++ framework for multi-object tracking, integrating state-of-the-art tracking a
 ### Dependency Management
 
 This project automatically fetches:
-- **[vision-core](https://github.com/olibartfast/vision-core)**: Core computer vision tasks and types
+- **[neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks)**: Core computer vision tasks and types
 - **[neuriplo](https://github.com/olibartfast/neuriplo)**: Unified neural inference interface
 - **[ByteTrack-cpp](https://github.com/Vertical-Beach/ByteTrack-cpp)**: ByteTrack implementation
 

@@ -3,7 +3,7 @@
 #include "TrackedObject.hpp"
 #include <opencv2/core/types.hpp>
 #include <vector>
-#include <vision-core/core/result_types.hpp>
+#include <neuriplo/tasks/core/result_types.hpp>
 
 class BaseTracker {
 protected:
@@ -13,6 +13,6 @@ public:
   explicit BaseTracker(const TrackConfig &config) : config_(config) {}
   virtual ~BaseTracker() = default;
   virtual std::vector<TrackedObject>
-  update(const std::vector<vision_core::Detection> &detections,
+  update(const std::vector<neuriplo_tasks::Detection> &detections,
          const cv::Mat &frame = cv::Mat()) = 0;
 };

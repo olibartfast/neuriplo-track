@@ -12,6 +12,6 @@ public:
   ~BoTSORTWrapper() override;
 
   std::vector<TrackedObject>
-  update(const std::vector<vision_core::Detection> &detections,
+  update(const std::vector<neuriplo_tasks::Detection> &detections,
          const cv::Mat &frame = cv::Mat()) override;
 };

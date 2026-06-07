@@ -45,5 +45,5 @@ target_link_libraries(trackers PUBLIC
     bytetrack
     Eigen3::Eigen
     ${ONNX_RUNTIME_DIR}/lib/libonnxruntime.so
-    vision-core::vision-core
+    neuriplo-tasks::neuriplo-tasks
 )

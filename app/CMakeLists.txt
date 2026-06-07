@@ -33,7 +33,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME} PRIVATE
     glog::glog
     ${OpenCV_LIBS}
-    vision-core::vision-core
+    neuriplo-tasks::neuriplo-tasks
     neuriplo
     trackers
     Eigen3::Eigen
