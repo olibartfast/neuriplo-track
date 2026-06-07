@@ -108,16 +108,30 @@ message(STATUS "Found ONNX Runtime: ${ONNXRUNTIME_LIBRARY}")
 # Provide a consistent variable name for downstream targets
 set(ONNX_RUNTIME_DIR ${ONNXRUNTIME_DIR} CACHE PATH "ONNX Runtime root directory")
 
-# Fetch vision-core
+# Fetch neuriplo-tasks
+set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(_NEURIPLO_TASKS_SIBLING "")
+foreach(_candidate IN ITEMS
+    "${CMAKE_CURRENT_SOURCE_DIR}/../neuriplo-tasks")
+    if(EXISTS "${_candidate}/CMakeLists.txt")
+        set(_NEURIPLO_TASKS_SIBLING "${_candidate}")
+        break()
+    endif()
+endforeach()
+if(NOT _NEURIPLO_TASKS_SIBLING STREQUAL "")
+    set(FETCHCONTENT_SOURCE_DIR_NEURIPLO-TASKS "${_NEURIPLO_TASKS_SIBLING}" CACHE PATH "" FORCE)
+endif()
+
 FetchContent_Declare(
-    vision-core
-    GIT_REPOSITORY https://github.com/olibartfast/vision-core.git
-    GIT_TAG        ${VISION_CORE_VERSION}
+    neuriplo-tasks
+    GIT_REPOSITORY https://github.com/olibartfast/neuriplo-tasks.git
+    GIT_TAG        ${NEURIPLO_TASKS_VERSION}
 )
-FetchContent_MakeAvailable(vision-core)
-message(STATUS "vision-core_SOURCE_DIR: ${vision-core_SOURCE_DIR}")
+FetchContent_MakeAvailable(neuriplo-tasks)
+message(STATUS "neuriplo-tasks_SOURCE_DIR: ${neuriplo-tasks_SOURCE_DIR}")
 
 # Fetch neuriplo
+set(BUILD_INFERENCE_ENGINE_TESTS OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     neuriplo
     GIT_REPOSITORY https://github.com/olibartfast/neuriplo.git

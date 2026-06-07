@@ -204,18 +204,18 @@ Edit `versions.env` to specify custom versions:
 ```bash
 # versions.env
 # versions.env
-VISION_CORE_VERSION="v1.0.0"
+NEURIPLO_TASKS_VERSION="v1.0.0"
 NEURIPLO_VERSION="v1.0.0"
 BYTETRACK_VERSION="custom-branch"
 ```
 
 ### Using Local Dependencies
 
-To use a local version of vision-core or neuriplo:
+To use a local version of neuriplo-tasks or neuriplo:
 ```cmake
 # In CMakeLists.txt, comment out FetchContent and add:
 # In CMakeLists.txt, comment out FetchContent and add:
-add_subdirectory(/path/to/vision-core vision-core)
+add_subdirectory(/path/to/neuriplo-tasks neuriplo-tasks)
 add_subdirectory(/path/to/neuriplo neuriplo)
 ```
 

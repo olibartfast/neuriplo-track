@@ -1,4 +1,5 @@
 #include "SortWrapper.hpp"
+#include <neuriplo/tasks/core/opencv_interop.hpp>
 
 SortWrapper::SortWrapper(const TrackConfig &config)
     : BaseTracker(config),
@@ -8,7 +9,7 @@ SortWrapper::SortWrapper(const TrackConfig &config)
 SortWrapper::~SortWrapper() = default;
 
 std::vector<TrackedObject>
-SortWrapper::update(const std::vector<vision_core::Detection> &detections,
+SortWrapper::update(const std::vector<neuriplo_tasks::Detection> &detections,
                     const cv::Mat &frame) {
   std::vector<TrackedObject> tracksOutput;
   std::vector<TrackingBox> detectionsToTrack;
@@ -19,7 +20,7 @@ SortWrapper::update(const std::vector<vision_core::Detection> &detections,
         config_.classes_to_track.end()) {
       TrackingBox tb;
       tb.id = static_cast<int>(detection.class_id);
-      tb.box = cv::Rect_<float>(detection.bbox);
+      tb.box = cv::Rect_<float>(neuriplo_tasks::toCvRect(detection.bbox));
       detectionsToTrack.push_back(tb);
     }
   }

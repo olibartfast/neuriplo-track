@@ -15,7 +15,7 @@ ByteTrackWrapper::ByteTrackWrapper(const TrackConfig &config)
 ByteTrackWrapper::~ByteTrackWrapper() = default;
 
 std::vector<TrackedObject>
-ByteTrackWrapper::update(const std::vector<vision_core::Detection> &detections,
+ByteTrackWrapper::update(const std::vector<neuriplo_tasks::Detection> &detections,
                          const cv::Mat &frame) {
   std::vector<TrackedObject> tracksOutput;
   std::vector<byte_track::Object> objects;

@@ -948,7 +948,7 @@ public:
 ```cpp
 #include "TrackerFactory.hpp"
 #include "ConfigManager.hpp"
-#include <vision-core/core/task_factory.hpp>
+#include <neuriplo/tasks/core/task_factory.hpp>
 #include <opencv2/opencv.hpp>
 
 int main(int argc, char** argv) {
@@ -966,10 +966,10 @@ int main(int argc, char** argv) {
             return -1;
         }
         
-        // Initialize detector using vision-core
-        vision_core::ModelInfo model_info;
+        // Initialize detector using neuriplo-tasks
+        neuriplo_tasks::ModelInfo model_info;
         model_info.addInput("images", {1, 3, 640, 640}); // Example shape
-        auto detector = vision_core::TaskFactory::createTaskInstance("yolov8", model_info);
+        auto detector = neuriplo_tasks::TaskFactory::createTaskInstance("yolov8", model_info);
         
         cv::Mat frame;
         int frame_count = 0;
@@ -1040,7 +1040,7 @@ public:
         }
     }
     
-    void processCamera(size_t camera_id, vision_core::TaskInterface& detector) {
+    void processCamera(size_t camera_id, neuriplo_tasks::TaskInterface& detector) {
         cv::Mat frame;
         
         while (cameras[camera_id].read(frame)) {
@@ -1057,9 +1057,9 @@ public:
     
     void run() {
         // Setup detector
-        vision_core::ModelInfo info;
+        neuriplo_tasks::ModelInfo info;
         // ... fill info ...
-        auto detector = vision_core::TaskFactory::createTaskInstance("yolov8", info);
+        auto detector = neuriplo_tasks::TaskFactory::createTaskInstance("yolov8", info);
         std::vector<std::thread> threads;
         
         // Start thread for each camera

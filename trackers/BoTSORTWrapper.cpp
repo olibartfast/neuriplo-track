@@ -1,4 +1,5 @@
 #include "BoTSORTWrapper.hpp"
+#include <neuriplo/tasks/core/opencv_interop.hpp>
 
 BoTSORTWrapper::BoTSORTWrapper(const TrackConfig &config)
     : BaseTracker(config) {
@@ -11,7 +12,7 @@ BoTSORTWrapper::BoTSORTWrapper(const TrackConfig &config)
 BoTSORTWrapper::~BoTSORTWrapper() = default;
 
 std::vector<TrackedObject>
-BoTSORTWrapper::update(const std::vector<vision_core::Detection> &detections,
+BoTSORTWrapper::update(const std::vector<neuriplo_tasks::Detection> &detections,
                        const cv::Mat &frame) {
   std::vector<TrackedObject> tracksOutput;
   std::vector<botsort::Detection> detectionsToTrack;
@@ -21,7 +22,7 @@ BoTSORTWrapper::update(const std::vector<vision_core::Detection> &detections,
     if (config_.classes_to_track.find(static_cast<int>(detection.class_id)) !=
         config_.classes_to_track.end()) {
       botsort::Detection detBox;
-      detBox.bbox_tlwh = cv::Rect_<float>(detection.bbox);
+      detBox.bbox_tlwh = cv::Rect_<float>(neuriplo_tasks::toCvRect(detection.bbox));
       detBox.confidence = detection.class_confidence;
       detBox.class_id = static_cast<int>(detection.class_id);
       detectionsToTrack.push_back(detBox);

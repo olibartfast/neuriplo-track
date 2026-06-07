@@ -35,7 +35,7 @@ read_versions_from_env()
 
 # External C++ Libraries (fetched via CMake FetchContent)
 set(BYTETRACK_VERSION ${BYTETRACK_VERSION} CACHE STRING "ByteTrack library version")
-set(VISION_CORE_VERSION ${VISION_CORE_VERSION} CACHE STRING "vision-core library version")
+set(NEURIPLO_TASKS_VERSION ${NEURIPLO_TASKS_VERSION} CACHE STRING "neuriplo-tasks library version")
 set(NEURIPLO_VERSION ${NEURIPLO_VERSION} CACHE STRING "neuriplo library version")
 
 # System Dependencies (minimum versions)
@@ -47,7 +47,7 @@ set(CMAKE_MIN_VERSION ${CMAKE_MIN_VERSION} CACHE STRING "Minimum CMake version")
 # Print version information for debugging
 message(STATUS "=== Project Dependency Versions ===")
 message(STATUS "ByteTrack: ${BYTETRACK_VERSION}")
-message(STATUS "vision-core: ${VISION_CORE_VERSION}")
+message(STATUS "neuriplo-tasks: ${NEURIPLO_TASKS_VERSION}")
 message(STATUS "neuriplo: ${NEURIPLO_VERSION}")
 message(STATUS "OpenCV (minimum): ${OPENCV_MIN_VERSION}")
 message(STATUS "glog (minimum): ${GLOG_MIN_VERSION}")
