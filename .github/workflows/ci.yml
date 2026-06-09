@@ -1,0 +1,50 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [develop, "feature/**", "feat/**", master]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  pull_request:
+    branches: [develop, master]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-deps
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
+
+  build-warnings:
+    name: Build with Strict Warnings
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-deps
+
+      - name: Configure
+        run: |
+          cmake -S . -B build-warnings -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DWERROR=ON \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build
+        run: cmake --build build-warnings --parallel

@@ -1,0 +1,78 @@
+name: C++ Lint & Build
+
+on:
+  push:
+    branches: [develop, "feature/**", "feat/**", master]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  pull_request:
+    branches: [develop, master]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+
+jobs:
+  format-check:
+    name: Format Check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format-18
+
+      - name: Check formatting
+        run: |
+          find app include trackers -path trackers/BoTSORT -prune -o -type f \( -name '*.cpp' -o -name '*.hpp' \) -print | xargs clang-format-18 --dry-run --Werror
+
+  clang-tidy:
+    name: Clang-Tidy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-deps
+
+      - name: Install clang-tidy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy-18
+
+      - name: Generate compile_commands.json
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Run clang-tidy
+        run: |
+          jq -r '.[].file' build/compile_commands.json \
+            | grep -E "^${GITHUB_WORKSPACE}/(app|trackers)/.*\.cpp$" \
+            | grep -v "^${GITHUB_WORKSPACE}/trackers/BoTSORT/" \
+            | sort -u \
+            | xargs clang-tidy-18 -p build
+
+  cppcheck:
+    name: Cppcheck
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cppcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cppcheck
+
+      - name: Run cppcheck
+        run: |
+          cppcheck --enable=warning --std=c++20 --error-exitcode=1 \
+            --suppress=missingIncludeSystem \
+            --suppress=unmatchedSuppression \
+            -I include \
+            -I app/inc \
+            -I trackers/SORT \
+            -I trackers/BoTSORT/include \
+            app include trackers \
+            -i trackers/BoTSORT

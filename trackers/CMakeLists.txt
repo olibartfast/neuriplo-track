@@ -23,9 +23,18 @@ add_library(trackers SHARED
     ${BOTSORT_SOURCES}
     ${WRAPPER_SOURCES}
 )
+set_source_files_properties(
+    ${SORT_SOURCES}
+    ${WRAPPER_SOURCES}
+    PROPERTIES COMPILE_OPTIONS "${NEURIPLO_TRACK_WARNING_FLAGS}"
+)
 
 message(STATUS "Trackers Module, CMAKE_CURRENT_LIST_DIR: ${CMAKE_CURRENT_LIST_DIR}")
 message(STATUS "Trackers Module, bytetrack_SOURCE_DIR: ${bytetrack_SOURCE_DIR}")
+
+if(EIGEN3_INCLUDE_DIR)
+    get_filename_component(EIGEN3_INCLUDE_PARENT "${EIGEN3_INCLUDE_DIR}" DIRECTORY)
+endif()
 
 # Include directories
 target_include_directories(trackers PUBLIC
@@ -35,6 +44,7 @@ target_include_directories(trackers PUBLIC
     ${bytetrack_SOURCE_DIR}/include
     ${OpenCV_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIR}
+    ${EIGEN3_INCLUDE_PARENT}
     ${ONNX_RUNTIME_DIR}/include
 )
 

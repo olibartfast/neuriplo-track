@@ -1,17 +1,17 @@
 #pragma once
 #include "BaseTracker.hpp"
 #include "ByteTrack/BYTETracker.h"
+
 #include <memory>
 
 class ByteTrackWrapper : public BaseTracker {
-private:
-  std::unique_ptr<byte_track::BYTETracker> tracker_;
+  private:
+    std::unique_ptr<byte_track::BYTETracker> tracker_;
 
-public:
-  explicit ByteTrackWrapper(const TrackConfig &config);
-  ~ByteTrackWrapper() override;
+  public:
+    explicit ByteTrackWrapper(const TrackConfig &config);
+    ~ByteTrackWrapper() override;
 
-  std::vector<TrackedObject>
-  update(const std::vector<neuriplo_tasks::Detection> &detections,
-         const cv::Mat &frame = cv::Mat()) override;
+    std::vector<TrackedObject> update(const std::vector<neuriplo_tasks::Detection> &detections,
+                                      const cv::Mat &frame = cv::Mat()) override;
 };

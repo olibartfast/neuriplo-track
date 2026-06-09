@@ -2,12 +2,11 @@
 // Sort.cpp: SORT(Simple Online and Realtime Tracking) Class Implementation
 //
 #include "Sort.hpp"
+
 #include <cmath>
 
-
 // Computes IOU between two bounding boxes
-double get_iou(cv::Rect_<float> bb_test, cv::Rect_<float> bb_gt)
-{
+double get_iou(cv::Rect_<float> bb_test, cv::Rect_<float> bb_gt) {
     float in = (bb_test & bb_gt).area();
     float un = bb_test.area() + bb_gt.area() - in;
 
@@ -18,8 +17,7 @@ double get_iou(cv::Rect_<float> bb_test, cv::Rect_<float> bb_gt)
 }
 
 // Update the state vector with observed bounding box.
-std::vector<TrackingBox> Sort::update(const std::vector<TrackingBox>& detect_frame_data )
-{
+std::vector<TrackingBox> Sort::update(const std::vector<TrackingBox> &detect_frame_data) {
     m_frame_count += 1;
 
     if (m_trackers.size() == 0) { // the first frame met
@@ -37,10 +35,8 @@ std::vector<TrackingBox> Sort::update(const std::vector<TrackingBox>& detect_fra
     for (auto it = m_trackers.begin(); it != m_trackers.end();) {
         cv::Rect_<float> pBox = (*it).predict();
         // Check for valid box (non-negative coordinates and finite dimensions)
-        if (pBox.x >= 0 && pBox.y >= 0 && 
-            pBox.width > 0 && pBox.height > 0 &&
-            !std::isnan(pBox.x) && !std::isnan(pBox.y) && 
-            !std::isnan(pBox.width) && !std::isnan(pBox.height)) {
+        if (pBox.x >= 0 && pBox.y >= 0 && pBox.width > 0 && pBox.height > 0 && !std::isnan(pBox.x) &&
+            !std::isnan(pBox.y) && !std::isnan(pBox.width) && !std::isnan(pBox.height)) {
             predicted_boxes.push_back(pBox);
             it++;
         } else {
@@ -69,7 +65,7 @@ std::vector<TrackingBox> Sort::update(const std::vector<TrackingBox>& detect_fra
                 it = m_trackers.erase(it);
             } else {
                 if (((*it).m_time_since_update < 1) &&
-                        ((*it).m_hit_streak >= m_min_hits || m_frame_count <= m_min_hits)) {
+                    ((*it).m_hit_streak >= m_min_hits || m_frame_count <= m_min_hits)) {
                     TrackingBox output;
                     output.box = (*it).get_state();
                     output.id = (*it).m_id + 1;
@@ -110,11 +106,9 @@ std::vector<TrackingBox> Sort::update(const std::vector<TrackingBox>& detect_fra
         for (unsigned int i = 0; i < track_num; ++i)
             matched_items.insert(assignment[i]);
 
-        std::set_difference(all_items.begin(), all_items.end(),
-                matched_items.begin(), matched_items.end(),
-                std::insert_iterator<std::set<int>>(unmatched_detections, unmatched_detections.begin()));
-    }
-    else if (detect_num < track_num) { // there are unmatched trajectory/predictions
+        std::set_difference(all_items.begin(), all_items.end(), matched_items.begin(), matched_items.end(),
+                            std::insert_iterator<std::set<int>>(unmatched_detections, unmatched_detections.begin()));
+    } else if (detect_num < track_num) { // there are unmatched trajectory/predictions
         for (unsigned int i = 0; i < track_num; ++i)
             if (assignment[i] == -1) // unassigned label will be set as -1 in the assignment algorithm
                 unmatched_trajectories.insert(i);
@@ -129,8 +123,7 @@ std::vector<TrackingBox> Sort::update(const std::vector<TrackingBox>& detect_fra
         if (1 - iou_matrix[i][assignment[i]] < m_iou_threshold) {
             unmatched_trajectories.insert(i);
             unmatched_detections.insert(assignment[i]);
-        }
-        else
+        } else
             matched_pairs.push_back(cv::Point(i, assignment[i]));
     }
 
@@ -154,8 +147,7 @@ std::vector<TrackingBox> Sort::update(const std::vector<TrackingBox>& detect_fra
     // get trackers' output
     m_tracking_output.clear();
     for (auto it = m_trackers.begin(); it != m_trackers.end();) {
-        if (((*it).m_time_since_update < 1) &&
-                ((*it).m_hit_streak >= m_min_hits || m_frame_count <= m_min_hits)) {
+        if (((*it).m_time_since_update < 1) && ((*it).m_hit_streak >= m_min_hits || m_frame_count <= m_min_hits)) {
             TrackingBox output;
             output.box = (*it).get_state();
             output.id = (*it).m_id + 1;
@@ -171,4 +163,3 @@ std::vector<TrackingBox> Sort::update(const std::vector<TrackingBox>& detect_fra
     }
     return m_tracking_output;
 }
-
