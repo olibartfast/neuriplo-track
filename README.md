@@ -210,9 +210,12 @@ neuriplo-track/
 
 ## Documentation
 
+- [AGENTS.md](AGENTS.md) — guide for AI coding agents
 - [System Architecture](docs/System_Architecture.md)
 - [Tracking Algorithms](docs/Tracking_Algorithms.md)
 - [Code Examples](docs/Code_Examples.md)
+- [Build Instructions](docs/Build_Instructions.md)
+- [Multiple Object Tracking Guide](docs/Multiple_Object_Tracking_Guide.md)
 
 ## Video Demo
 

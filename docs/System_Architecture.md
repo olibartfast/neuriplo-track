@@ -18,7 +18,8 @@ This document details the C++ system architecture and design patterns used in th
 
 ---
 
-## 1. Design Patterns and Structure 
+## 1. Design Patterns and Structure {#design-patterns}
+
 The system uses a **Strategy Pattern** to allow interchangeability of tracking algorithms:
 
 ```cpp
@@ -72,7 +73,7 @@ public:
 
 ---
 
-## 2. Wrapper Classes 
+## 2. Wrapper Classes {#wrapper-classes}
 
 Each tracking algorithm is wrapped in a specific class that implements the `BaseTracker` interface:
 
@@ -154,7 +155,8 @@ public:
 
 ---
 
-## 3. Configuration System 
+## 3. Configuration System {#configuration-system}
+
 ### TrackConfig Structure
 
 ```cpp
@@ -232,7 +234,7 @@ struct TrackConfig {
 
 ---
 
-## 4. Factory Pattern 
+## 4. Factory Pattern {#factory-pattern}
 
 ### Tracker Factory Implementation
 
@@ -296,7 +298,8 @@ public:
 
 ---
 
-## 5. Data Structures 
+## 5. Data Structures {#data-structures}
+
 ### Data Structure Design Principles
 
 **Detection Structure**:
@@ -393,7 +396,8 @@ public:
 
 ---
 
-## 6. Memory Management 
+## 6. Memory Management {#memory-management}
+
 ### RAII Principles
 
 ```cpp
@@ -499,7 +503,8 @@ public:
 
 ---
 
-## 7. Error Handling 
+## 7. Error Handling {#error-handling}
+
 ### Exception Hierarchy
 
 ```cpp
@@ -599,7 +604,7 @@ public:
 
 ---
 
-## 8. Performance Optimization 
+## 8. Performance Optimization {#performance-optimization}
 
 ### Profiling Integration
 

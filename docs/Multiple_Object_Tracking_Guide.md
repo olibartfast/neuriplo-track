@@ -15,7 +15,7 @@
 
 ---
 
-## 1. Introduction to Multiple Object Tracking 
+## 1. Introduction to Multiple Object Tracking {#introduction}
 **Multiple Object Tracking (MOT)** is a fundamental computer vision problem that involves simultaneously tracking multiple moving objects through video sequences. The goal is to maintain object identities over time while handling occlusions, appearance changes, and complex movements.
 
 ### Core Problem Statement
@@ -38,7 +38,7 @@ MOT consists of three main phases:
 
 ---
 
-## 2. MOTChallenge: The Reference Benchmark
+## 2. MOTChallenge: The Reference Benchmark {#motchallenge}
 
 ### What is MOTChallenge?
 
@@ -78,11 +78,11 @@ Despite "dated" names, these benchmarks remain gold standards because:
 
 ---
 
-## 3. Datasets and Benchmarks
+## 3. Datasets and Benchmarks 2025 {#datasets-2025}
 
 ### Main Datasets by Category
 
-| **Dataset/Benchmark** | **Domain** | ** Relevance** | **Main Challenges** |
+| **Dataset/Benchmark** | **Domain** | **Relevance** | **Main Challenges** |
 |----------------------|-------------|---------------------|----------------------|
 | **MOT17/MOT20** | Urban pedestrians | Academic gold standard | Crowded scenes, occlusions, ID switches |
 | **DanceTrack** | People with uniform appearance | Advanced motion modeling | Non-linear movement, similar appearance |
@@ -90,7 +90,7 @@ Despite "dated" names, these benchmarks remain gold standards because:
 | **KITTI-MOT** | Vehicles (autonomous driving) | Automotive applications | Ego-motion, distant objects, weather conditions |
 | **UA-DETRAC** | Vehicle traffic | Road surveillance | Traffic density, multiple scales |
 
-### Modern Characteristics 
+### Modern Characteristics
 
 A benchmark is considered "modern" if it features:
 
@@ -114,11 +114,11 @@ A benchmark is considered "modern" if it features:
 
 ---
 
-## 4. Evaluation Metrics
+## 4. Evaluation Metrics {#metrics}
 
 Multiple Object Tracking evaluation uses several complementary metrics to assess different aspects of tracking performance. Understanding these metrics is crucial for proper algorithm evaluation and comparison.
 
-### 6.1 CLEAR MOT Metrics
+### 4.1 CLEAR MOT Metrics
 
 #### MOTA (Multiple Object Tracking Accuracy)
 
@@ -156,7 +156,7 @@ MOTP = Σ(IoU of matched pairs) / Total matches
 **Purpose**: Measures localization accuracy of matched detections
 **Range**: [0, 1], where 1 indicates perfect localization
 
-### 6.2 IDF1 (ID F1 Score)
+### 4.2 IDF1 (ID F1 Score)
 
 A metric focused specifically on identity preservation rather than detection accuracy.
 
@@ -182,7 +182,7 @@ IDF1 = 2 * IDTP / (2 * IDTP + IDFP + IDFN)
 3. Count wrong associations (IDFP) and missed associations (IDFN)
 4. Apply F1 formula
 
-### 6.3 HOTA (Higher Order Tracking Accuracy)
+### 4.3 HOTA (Higher Order Tracking Accuracy)
 
 **HOTA** is a more recent and comprehensive metric that addresses MOTA's limitations.
 
@@ -221,7 +221,7 @@ AssA(α) = Σ(TPA(α)) / Σ(TPA(α) + FNA + FPA)
 - **Interpretable**: Clear separation of detection vs association errors
 - **Robust**: Less sensitive to detection performance variations
 
-### 6.4 Detailed Component Metrics
+### 4.4 Detailed Component Metrics
 
 #### LocA (Localization Accuracy)
 **Purpose**: Measures spatial accuracy of matched detections
@@ -244,7 +244,7 @@ AssA(α) = Σ(TPA(α)) / Σ(TPA(α) + FNA + FPA)
 **Purpose**: Measures recall of trajectory associations
 **Considers**: How often real object trajectories are captured
 
-### 6.5 Traditional Counting Metrics
+### 4.5 Traditional Counting Metrics
 
 #### MT (Mostly Tracked)
 **Definition**: Trajectories tracked for ≥80% of their lifespan
@@ -272,7 +272,7 @@ AssA(α) = Σ(TPA(α)) / Σ(TPA(α) + FNA + FPA)
 - Detection failures
 - Association errors
 
-### 6.6 Performance and Efficiency Metrics
+### 4.6 Performance and Efficiency Metrics
 
 #### FPS (Frames Per Second)
 **Purpose**: Measures computational efficiency
@@ -288,7 +288,7 @@ AssA(α) = Σ(TPA(α)) / Σ(TPA(α) + FNA + FPA)
 - Association time
 - Track management time
 
-### 6.7 Metric Selection Guidelines
+### 4.7 Metric Selection Guidelines
 
 **For Research Comparison**:
 - Primary: HOTA (most comprehensive)
@@ -305,7 +305,7 @@ AssA(α) = Σ(TPA(α)) / Σ(TPA(α) + FNA + FPA)
 - Fast motion: MOTA, DetA
 - Long sequences: MT, ML, Frag
 
-### 6.8 Metric Interpretation Examples
+### 4.8 Metric Interpretation Examples
 
 **Scenario 1**: High MOTA, Low IDF1
 - **Interpretation**: Good detection, poor ID consistency
@@ -322,7 +322,7 @@ AssA(α) = Σ(TPA(α)) / Σ(TPA(α) + FNA + FPA)
 - **Cause**: Fragmented tracks
 - **Solution**: Improve track management and re-identification
 
-### 6.9 Implementation in C++
+### 4.9 Implementation in C++
 
 ```cpp
 struct TrackingMetrics {
@@ -349,7 +349,7 @@ struct TrackingMetrics {
 
 ## 5. Technical Challenges {#challenges}
 
-### 7.1 Occlusions
+### 5.1 Occlusions
 
 **Problem**: Objects temporarily hidden by other objects or obstacles.
 
@@ -368,7 +368,7 @@ enum TrackState {
 };
 ```
 
-### 7.2 Appearance Similarity
+### 5.2 Appearance Similarity
 
 **Problem**: Objects with very similar appearance (uniforms, twins, etc.).
 
@@ -385,7 +385,7 @@ void Track::_update_features(const std::shared_ptr<FeatureVector>& feat) {
 }
 ```
 
-### 7.3 Camera Motion
+### 5.3 Camera Motion
 
 **Problem**: Camera movement introduces spurious motion.
 
@@ -399,7 +399,7 @@ class GlobalMotionCompensation {
 };
 ```
 
-### 7.4 Scale and Resolution
+### 5.4 Scale and Resolution
 
 **Problems**:
 - Small objects difficult to track
@@ -411,7 +411,7 @@ class GlobalMotionCompensation {
 - Adaptive bounding box size
 - Dynamic confidence thresholding
 
-### 7.5 Real-time Constraints
+### 5.5 Real-time Constraints
 
 **Speed vs Accuracy Trade-off**:
 
@@ -423,9 +423,9 @@ class GlobalMotionCompensation {
 
 ---
 
-## 6. Practical Usage 
+## 6. Practical Usage {#practical-usage}
 
-### 8.1 Compilation
+### 6.1 Compilation
 
 ```bash
 # Clone repository
@@ -438,7 +438,7 @@ cmake -G ninja -B build -DDEFAULT_BACKEND=ONNX_RUNTIME -DUSE_GSTREAMER=OFF
 cmake --build build --config Release
 ```
 
-### 8.2 Execution
+### 6.2 Execution
 
 ```bash
 ./neuriplo-track \
@@ -449,7 +449,7 @@ cmake --build build --config Release
     --class=<class_names_to_track>
 ```
 
-### 8.3 BoTSORT Configuration
+### 6.3 BoTSORT Configuration
 
 Required configuration files:
 
@@ -476,7 +476,7 @@ method = orb
 max_features = 1000
 ```
 
-### 8.4 Custom Integration
+### 6.4 Custom Integration
 
 ```cpp
 // Custom integration example
@@ -507,7 +507,7 @@ int main() {
 
 ## 7. Conclusions and Future Developments {#conclusions}
 
-### 9.1 State of the Art 2025
+### 7.1 State of the Art 2025
 
 Multiple Object Tracking has reached maturity in many scenarios, but challenges persist:
 
@@ -523,7 +523,7 @@ Multiple Object Tracking has reached maturity in many scenarios, but challenges 
 - 3D multi-object tracking
 - Edge deployment optimization
 
-### 9.2 Technology Trends
+### 7.2 Technology Trends
 
 **1. End-to-End Learning**:
 - Joint detection-tracking models
@@ -540,7 +540,7 @@ Multiple Object Tracking has reached maturity in many scenarios, but challenges 
 - Pruning and distillation
 - Hardware-specific optimization
 
-### 9.3 Development Roadmap
+### 7.3 Development Roadmap
 
 **Short-term (6-12 months)**:
 - [ ] Integration of additional trackers (OC-SORT, StrongSORT)
@@ -560,7 +560,7 @@ Multiple Object Tracking has reached maturity in many scenarios, but challenges 
 - [ ] Automatic domain adaptation
 - [ ] Federated learning for tracking
 
-### 9.4 Final Recommendations
+### 7.4 Final Recommendations
 
 **For Research**:
 - Focus on DanceTrack and SportsMOT for advanced challenges
