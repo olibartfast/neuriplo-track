@@ -13,7 +13,7 @@ This document contains detailed code examples and implementation specifics for t
 
 ---
 
-## 1. SORT Implementation
+## 1. SORT Implementation {#sort-implementation}
 
 ### Core SORT Class Structure
 ```cpp
@@ -135,7 +135,8 @@ std::vector<std::pair<int, int>> Sort::associateDetectionsToTrackers(
 
 ---
 
-## 2. BoTSORT Implementation
+## 2. BoTSORT Implementation {#botsort-implementation}
+
 ### Core BoTSORT Class
 ```cpp
 namespace botsort {
@@ -420,7 +421,7 @@ private:
 
 ---
 
-## 3. ByteTrack Implementation 
+## 3. ByteTrack Implementation {#bytetrack-implementation}
 
 ### Core ByteTracker Class
 ```cpp
@@ -619,7 +620,8 @@ private:
 
 ---
 
-## 4. Wrapper Classes
+## 4. Wrapper Classes {#wrapper-classes}
+
 ### SortWrapper Implementation
 ```cpp
 class SortWrapper : public BaseTracker {
@@ -790,7 +792,7 @@ private:
 
 ---
 
-## 5. Configuration Examples
+## 5. Configuration Examples {#configuration-examples}
 
 ### JSON Configuration File
 ```json

@@ -203,7 +203,6 @@ cmake -DDEFAULT_BACKEND=ONNX_RUNTIME ..
 Edit `versions.env` to specify custom versions:
 ```bash
 # versions.env
-# versions.env
 NEURIPLO_TASKS_VERSION="v1.0.0"
 NEURIPLO_VERSION="v1.0.0"
 BYTETRACK_VERSION="custom-branch"
@@ -213,7 +212,6 @@ BYTETRACK_VERSION="custom-branch"
 
 To use a local version of neuriplo-tasks or neuriplo:
 ```cmake
-# In CMakeLists.txt, comment out FetchContent and add:
 # In CMakeLists.txt, comment out FetchContent and add:
 add_subdirectory(/path/to/neuriplo-tasks neuriplo-tasks)
 add_subdirectory(/path/to/neuriplo neuriplo)
@@ -231,5 +229,5 @@ cmake --build . -j4
 ## Next Steps
 
 - Read [README.md](../README.md) for usage instructions
-- Check [Migration_Guide.md](Migration_Guide.md) if upgrading from old version
 - Review [Code_Examples.md](Code_Examples.md) for integration examples
+- See [System_Architecture.md](System_Architecture.md) for design patterns and data structures
