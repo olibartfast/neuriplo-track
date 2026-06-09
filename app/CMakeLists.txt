@@ -10,6 +10,7 @@ set(SOURCES
 
 # Create executable
 add_executable(${PROJECT_NAME} ${SOURCES})
+target_compile_options(${PROJECT_NAME} PRIVATE ${NEURIPLO_TRACK_WARNING_FLAGS})
 
 # Include directories
 target_include_directories(${PROJECT_NAME} PRIVATE

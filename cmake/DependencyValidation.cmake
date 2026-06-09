@@ -15,7 +15,7 @@ function(validate_dependency dependency_name dependency_path)
 endfunction()
 
 # Function to validate system dependencies
-function(validate_system_dependencies)
+function(neuriplo_track_validate_system_dependencies)
     # OpenCV, glog, and Eigen3 should already be found before this function is called
     if(NOT OpenCV_FOUND)
         find_package(OpenCV REQUIRED)
@@ -37,12 +37,18 @@ function(validate_system_dependencies)
 endfunction()
 
 # Function to validate fetched dependencies
-function(validate_fetched_dependencies)
-    # Validate object-detection-inference library
-    if(NOT DEFINED object-detection-inference_SOURCE_DIR)
-        message(FATAL_ERROR "object-detection-inference library not found. This should be fetched automatically by CMake.")
+function(neuriplo_track_validate_fetched_dependencies)
+    # Validate neuriplo-tasks library
+    if(NOT DEFINED neuriplo-tasks_SOURCE_DIR)
+        message(FATAL_ERROR "neuriplo-tasks library not found. This should be fetched automatically by CMake.")
     endif()
-    message(STATUS "✓ object-detection-inference library found at ${object-detection-inference_SOURCE_DIR}")
+    message(STATUS "✓ neuriplo-tasks library found at ${neuriplo-tasks_SOURCE_DIR}")
+    
+    # Validate neuriplo library
+    if(NOT DEFINED neuriplo_SOURCE_DIR)
+        message(FATAL_ERROR "neuriplo library not found. This should be fetched automatically by CMake.")
+    endif()
+    message(STATUS "✓ neuriplo library found at ${neuriplo_SOURCE_DIR}")
     
     # Validate ByteTrack library
     if(NOT DEFINED bytetrack_SOURCE_DIR)
@@ -52,11 +58,11 @@ function(validate_fetched_dependencies)
 endfunction()
 
 # Function to validate all dependencies for this project
-function(validate_all_dependencies)
+function(validate_neuriplo_track_dependencies)
     message(STATUS "=== Validating Project Dependencies ===")
     
-    validate_system_dependencies()
-    validate_fetched_dependencies()
+    neuriplo_track_validate_system_dependencies()
+    neuriplo_track_validate_fetched_dependencies()
     
     message(STATUS "=== All Project Dependencies Validated Successfully ===")
 endfunction()
@@ -73,7 +79,7 @@ endfunction()
 # Function to provide helpful setup instructions
 function(print_setup_instructions)
     message(STATUS "=== Setup Instructions ===")
-    message(STATUS "This project uses the object-detection-inference library for object detection.")
+    message(STATUS "This project uses neuriplo and neuriplo-tasks for inference and task postprocessing.")
     message(STATUS "System dependencies can be installed with:")
     message(STATUS "  sudo apt update && sudo apt install -y libopencv-dev libgoogle-glog-dev libeigen3-dev")
     message(STATUS "")

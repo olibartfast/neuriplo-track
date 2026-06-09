@@ -1,0 +1,45 @@
+name: Setup Dependencies
+description: Install common build dependencies for neuriplo-track CI
+
+runs:
+  using: composite
+  steps:
+    - name: Install apt dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential \
+          ca-certificates \
+          ccache \
+          cmake \
+          git \
+          jq \
+          libcurl4-openssl-dev \
+          libeigen3-dev \
+          libgoogle-glog-dev \
+          libgtest-dev \
+          libopencv-dev \
+          ninja-build \
+          wget
+
+    - name: Install ONNX Runtime
+      shell: bash
+      run: |
+        ONNXRUNTIME_VERSION=1.19.2
+        ONNXRUNTIME_ROOT="${HOME}/dependencies/onnxruntime-linux-x64-${ONNXRUNTIME_VERSION}"
+
+        if [ ! -f "${ONNXRUNTIME_ROOT}/lib/libonnxruntime.so" ]; then
+          mkdir -p "${HOME}/dependencies"
+          wget -q \
+            "https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/onnxruntime-linux-x64-${ONNXRUNTIME_VERSION}.tgz" \
+            -O /tmp/onnxruntime.tgz
+          tar -xzf /tmp/onnxruntime.tgz -C "${HOME}/dependencies"
+        fi
+
+        echo "ONNX_RUNTIME_DIR=${ONNXRUNTIME_ROOT}" >> "${GITHUB_ENV}"
+
+    - name: Set up ccache
+      uses: hendrikmuhs/ccache-action@v1
+      with:
+        key: ${{ github.job }}-${{ runner.os }}

@@ -8,6 +8,25 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Generate compile_commands.json to make it easier to work with clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(NEURIPLO_TRACK_WARNING_FLAGS)
+if(MSVC)
+    list(APPEND NEURIPLO_TRACK_WARNING_FLAGS /W4)
+    option(WERROR "Treat compiler warnings as errors" OFF)
+    if(WERROR)
+        list(APPEND NEURIPLO_TRACK_WARNING_FLAGS /WX)
+    endif()
+else()
+    list(APPEND NEURIPLO_TRACK_WARNING_FLAGS
+        -Wall
+        -Wextra
+        -Wpedantic
+    )
+    option(WERROR "Treat compiler warnings as errors" OFF)
+    if(WERROR)
+        list(APPEND NEURIPLO_TRACK_WARNING_FLAGS -Werror)
+    endif()
+endif()
+
 # Include centralized version management
 include(cmake/versions.cmake)
 
@@ -132,6 +151,18 @@ message(STATUS "neuriplo-tasks_SOURCE_DIR: ${neuriplo-tasks_SOURCE_DIR}")
 
 # Fetch neuriplo
 set(BUILD_INFERENCE_ENGINE_TESTS OFF CACHE BOOL "" FORCE)
+set(_NEURIPLO_SIBLING "")
+foreach(_candidate IN ITEMS
+    "${CMAKE_CURRENT_SOURCE_DIR}/../neuriplo")
+    if(EXISTS "${_candidate}/CMakeLists.txt")
+        set(_NEURIPLO_SIBLING "${_candidate}")
+        break()
+    endif()
+endforeach()
+if(NOT _NEURIPLO_SIBLING STREQUAL "")
+    set(FETCHCONTENT_SOURCE_DIR_NEURIPLO "${_NEURIPLO_SIBLING}" CACHE PATH "" FORCE)
+endif()
+
 FetchContent_Declare(
     neuriplo
     GIT_REPOSITORY https://github.com/olibartfast/neuriplo.git
@@ -155,7 +186,7 @@ endif()
 message(STATUS "bytetrack_SOURCE_DIR: ${bytetrack_SOURCE_DIR}")
 
 # Validate all dependencies after they have been fetched
-validate_all_dependencies()
+validate_neuriplo_track_dependencies()
 
 # Define paths
 set(TRACKERS_ROOT ${CMAKE_SOURCE_DIR}/trackers)
