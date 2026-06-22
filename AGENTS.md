@@ -68,6 +68,13 @@ ctest --test-dir build --output-on-failure
 
 CI (`.github/workflows/ci.yml`): Release build with Ninja on ubuntu-24.04; separate job with `WERROR=ON`. Markdown-only changes do not trigger CI.
 
+## Hyperlink verification
+
+When editing `README.md` or any documentation with hyperlinks:
+- Verify all relative links resolve to existing files in the repo (`ls <path>`).
+- Verify absolute GitHub URLs are reachable (use `curl -sI <url>` or a quick fetch).
+- Prefer absolute GitHub blob/tree URLs over fragile cross-repo relative paths.
+
 ## Documentation
 
 | Doc | Purpose |
