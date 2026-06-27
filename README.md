@@ -9,7 +9,7 @@ C++ framework for multi-object tracking, integrating state-of-the-art tracking a
 
 - **Multiple Tracking Algorithms**: SORT, ByteTrack, and BoTSORT
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, LibTorch, OpenVINO (via [neuriplo](https://github.com/olibartfast/neuriplo))
-- **Multiple Detection Models**: YOLO series (v4-v12), RT-DETR, D-FINE, and more
+- **Multiple Detection Models**: YOLO series (v4->26), RT-DETR, D-FINE, and more
 - **Modular Architecture**: Trackers library can be built independently
 - **Docker Deployment Ready**: Container support for easy deployment
 - **Fetched Dependencies**: Bundles [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks) (common tasks/types), [neuriplo](https://github.com/olibartfast/neuriplo) (inference engine), and ByteTrack via FetchContent. All the fetched dependencies will be downloaded inside the `build/_deps` directory.
