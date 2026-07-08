@@ -129,6 +129,7 @@ set(ONNX_RUNTIME_DIR ${ONNXRUNTIME_DIR} CACHE PATH "ONNX Runtime root directory"
 
 # Fetch neuriplo-tasks
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(NEURIPLO_TASKS_WITH_OPENCV ON CACHE BOOL "" FORCE)
 set(_NEURIPLO_TASKS_SIBLING "")
 foreach(_candidate IN ITEMS
     "${CMAKE_CURRENT_SOURCE_DIR}/../neuriplo-tasks")
