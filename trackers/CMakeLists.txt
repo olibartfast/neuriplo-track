@@ -56,4 +56,5 @@ target_link_libraries(trackers PUBLIC
     Eigen3::Eigen
     ${ONNX_RUNTIME_DIR}/lib/libonnxruntime.so
     neuriplo-tasks::neuriplo-tasks
+    neuriplo-tasks::vision-opencv
 )

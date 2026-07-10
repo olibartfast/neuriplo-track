@@ -35,6 +35,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     glog::glog
     ${OpenCV_LIBS}
     neuriplo-tasks::neuriplo-tasks
+    neuriplo-tasks::vision-opencv
     neuriplo
     trackers
     Eigen3::Eigen

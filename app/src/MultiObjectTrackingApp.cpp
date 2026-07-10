@@ -119,7 +119,7 @@ void MultiObjectTrackingApp::processVideo(const std::string &source) {
     int frameCount = 0;
 
     while (cap.read(frame)) {
-        auto preprocessed_data = detector_->preprocess({frame});
+        auto preprocessed_data = detector_->preprocess({neuriplo_tasks::vision::opencv::copyFromCvMat(frame)});
         const auto [outputs, shapes] = engine_->get_infer_results(preprocessed_data);
 
         std::vector<neuriplo_tasks::Tensor> tensors;
@@ -130,7 +130,7 @@ void MultiObjectTrackingApp::processVideo(const std::string &source) {
             tensors.push_back(tensor);
         }
 
-        auto results = detector_->postprocess(frame.size(), tensors);
+        auto results = detector_->postprocess(neuriplo_tasks::vision::Size(frame.cols, frame.rows), tensors);
 
         // Extract Detections
         std::vector<neuriplo_tasks::Detection> detections;
