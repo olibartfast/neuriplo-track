@@ -46,7 +46,8 @@ Optional flags: `BUILD_ONLY_LIB=ON` (trackers library only), `WERROR=ON` (strict
 
 ## Architecture
 
-- **BaseTracker** (`include/BaseTracker.hpp`): abstract interface; `update(detections, frame)` returns `TrackedObject` vectors.
+- **BaseTracker** (`include/BaseTracker.hpp`): abstract interface; `update(detections, frame)` returns `TrackedObject` vectors. A second `update` overload takes `neuriplo_tasks::InstanceSegmentation`; its default slices to `Detection` and delegates, so only mask-aware trackers override it. Note `update({})` is ambiguous — name the vector type.
+- **Mask cue** (`trackers/common/MaskOverlap.hpp`): mask IoU blended into association by `TrackConfig::mask_iou_weight` (`--mask_iou_weight`), implemented in OC-SORT and C-BIoU. Not McByte: masks are per-frame, never propagated.
 - **Wrappers** (`include/*Wrapper.hpp`, `trackers/*Wrapper.cpp`): adapt SORT, ByteTrack, BoTSORT, OC-SORT, and C-BIoU to the common interface.
 - **TrackConfig** (`include/TrackConfig.hpp`): classes to track, IoU/age thresholds, per-algorithm parameters (ByteTrack, OC-SORT, C-BIoU), BoTSORT config paths (tracker.ini, gmc.ini, reid.ini, reid ONNX).
 - **makeTrackConfig / canonicalTrackerName** (`app/src/utils.cpp`): resolve `AppConfig` + CLI overrides into a `TrackConfig`, applying per-algorithm defaults; `--tracker` accepts `OC-SORT`/`C-BIoU` spellings.

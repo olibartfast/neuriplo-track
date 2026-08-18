@@ -133,16 +133,25 @@ void MultiObjectTrackingApp::processVideo(const std::string &source) {
 
         auto results = detector_->postprocess(neuriplo_tasks::vision::Size(frame.cols, frame.rows), tensors);
 
-        // Extract Detections
+        // Extract Detections. A segmentation model reports InstanceSegmentation
+        // instead, which is a Detection carrying a mask: keep both, so drawing
+        // and the tracker's detection path are unaffected while the masks stay
+        // available as an association cue.
         std::vector<neuriplo_tasks::Detection> detections;
+        std::vector<neuriplo_tasks::InstanceSegmentation> segmentations;
         for (const auto &result : results) {
             if (std::holds_alternative<neuriplo_tasks::Detection>(result)) {
                 detections.push_back(std::get<neuriplo_tasks::Detection>(result));
+            } else if (std::holds_alternative<neuriplo_tasks::InstanceSegmentation>(result)) {
+                const auto &segmentation = std::get<neuriplo_tasks::InstanceSegmentation>(result);
+                segmentations.push_back(segmentation);
+                detections.push_back(static_cast<const neuriplo_tasks::Detection &>(segmentation));
             }
         }
 
         // Run tracking
-        auto tracks = tracker_->update(detections, frame);
+        auto tracks =
+            segmentations.empty() ? tracker_->update(detections, frame) : tracker_->update(segmentations, frame);
 
         // Visualize results
         drawDetections(frame, detections);

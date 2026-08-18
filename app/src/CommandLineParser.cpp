@@ -33,6 +33,7 @@ const std::string CommandLineParser::params =
     "{ biou_b1       |        | CBIoU: buffer scale, first matching round (default 0.3) }"
     "{ biou_b2       |        | CBIoU: buffer scale, second matching round (default 0.5) }"
     "{ motion_n      |        | CBIoU: observations averaged by the motion model (default 5) }"
+    "{ mask_iou_weight |      | OCSORT/CBIoU: weight of mask overlap in association, 0-1 (default 0) }"
     "{ use-gpu       | false  | enable GPU support }"
     "{ min_confidence| 0.25   | minimum confidence threshold }"
     "{ batch         | 1      | batch size for inference }"
@@ -132,6 +133,8 @@ void CommandLineParser::parseTrackerOverrides(const cv::CommandLineParser &parse
     readFloat("biou_b1", overrides.cbiou_b1);
     readFloat("biou_b2", overrides.cbiou_b2);
     readInt("motion_n", overrides.cbiou_motion_n);
+
+    readFloat("mask_iou_weight", overrides.mask_iou_weight);
 }
 
 void CommandLineParser::printHelpMessage(const cv::CommandLineParser &parser) {

@@ -52,6 +52,12 @@ void testExistingTrackerDefaults() {
 
     const TrackConfig botsort = makeTrackConfig(configFor("BoTSORT"));
     CHECK_EQ(botsort.max_age, 1);
+
+    // The mask cue is off unless asked for, for every tracker.
+    for (const std::string &name : {std::string("SORT"), std::string("ByteTrack"), std::string("BoTSORT"),
+                                    std::string("OCSORT"), std::string("CBIoU")}) {
+        CHECK_LABELED(std::fabs(makeTrackConfig(configFor(name)).mask_iou_weight) < 1e-6f, name);
+    }
 }
 
 // The new trackers need a lifetime long enough to recover a track across a gap.
@@ -91,6 +97,7 @@ void testOverridesWin() {
     config.trackerOverrides.cbiou_b1 = 0.2f;
     config.trackerOverrides.cbiou_b2 = 0.8f;
     config.trackerOverrides.cbiou_motion_n = 9;
+    config.trackerOverrides.mask_iou_weight = 0.75f;
 
     const TrackConfig resolved = makeTrackConfig(config);
     CHECK_EQ(resolved.max_age, 5);
@@ -106,6 +113,7 @@ void testOverridesWin() {
     CHECK_NEAR(resolved.cbiou_b1, 0.2f, 1e-6f);
     CHECK_NEAR(resolved.cbiou_b2, 0.8f, 1e-6f);
     CHECK_EQ(resolved.cbiou_motion_n, 9);
+    CHECK_NEAR(resolved.mask_iou_weight, 0.75f, 1e-6f);
 }
 
 // Paths and class ids must survive the mapping.

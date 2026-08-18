@@ -33,9 +33,10 @@ cv::Point2f center(const cv::Rect_<float> &box) { return {box.x + box.width / 2,
 
 } // namespace
 
-OCSort::OCSort(int max_age, int min_hits, float iou_threshold, int delta_t, float inertia, float det_thresh)
+OCSort::OCSort(int max_age, int min_hits, float iou_threshold, int delta_t, float inertia, float det_thresh,
+               float mask_iou_weight)
     : max_age_(max_age), min_hits_(min_hits), iou_threshold_(iou_threshold), delta_t_(delta_t > 0 ? delta_t : 1),
-      inertia_(inertia), det_thresh_(det_thresh) {}
+      inertia_(inertia), det_thresh_(det_thresh), mask_iou_weight_(mask_iou_weight) {}
 
 // OCM. Track i is paired with detection j by minimising
 //   (1 - IoU) + inertia * (0.5 - direction_consistency) * detection_score
@@ -62,7 +63,11 @@ void OCSort::associateWithMomentum(const std::vector<DetectionBox> &detections,
         const cv::Point2f previous = center(tracker.lastObservation());
 
         for (size_t j = 0; j < detect_num; ++j) {
-            iou_matrix[i][j] = iou(predictions[i], detections[j].box);
+            // With a mask weight the overlap that both the cost and the
+            // threshold gate see is the blended one, so the mask can decide an
+            // association that boxes alone leave ambiguous.
+            iou_matrix[i][j] = tracking::blendOverlap(iou(predictions[i], detections[j].box), tracker.lastMask(),
+                                                      detections[j].mask, mask_iou_weight_);
 
             float direction_cost = 0.0f;
             if (has_direction) {
@@ -143,9 +148,12 @@ void OCSort::associateWithObservations(const std::vector<DetectionBox> &detectio
                                                std::vector<float>(detection_indices.size(), 0.0f));
 
     for (size_t i = 0; i < track_indices.size(); ++i) {
-        const cv::Rect_<float> &observation = trackers_[track_indices[i]]->lastObservation();
+        const OCSortKalmanTracker &tracker = *trackers_[track_indices[i]];
+        const cv::Rect_<float> &observation = tracker.lastObservation();
         for (size_t j = 0; j < detection_indices.size(); ++j) {
-            iou_matrix[i][j] = iou(observation, detections[detection_indices[j]].box);
+            const DetectionBox &detection = detections[detection_indices[j]];
+            iou_matrix[i][j] = tracking::blendOverlap(iou(observation, detection.box), tracker.lastMask(),
+                                                      detection.mask, mask_iou_weight_);
             cost_matrix[i][j] =
                 iou_matrix[i][j] < iou_threshold_ ? kUnmatchableCost : 1.0 - static_cast<double>(iou_matrix[i][j]);
         }
@@ -201,7 +209,7 @@ std::vector<TrackBox> OCSort::update(const std::vector<DetectionBox> &detections
     for (size_t i = 0; i < trackers_.size(); ++i) {
         if (detection_for_track[i] >= 0) {
             const DetectionBox &detection = dets[static_cast<size_t>(detection_for_track[i])];
-            trackers_[i]->update(detection.box, detection.score);
+            trackers_[i]->update(detection.box, detection.score, detection.mask);
             trackers_[i]->class_id = detection.class_id;
         } else {
             trackers_[i]->markMissed();
@@ -210,8 +218,8 @@ std::vector<TrackBox> OCSort::update(const std::vector<DetectionBox> &detections
 
     for (size_t j = 0; j < dets.size(); ++j) {
         if (!detection_matched[j]) {
-            trackers_.push_back(
-                std::make_unique<OCSortKalmanTracker>(dets[j].box, dets[j].score, dets[j].class_id, delta_t_));
+            trackers_.push_back(std::make_unique<OCSortKalmanTracker>(dets[j].box, dets[j].score, dets[j].class_id,
+                                                                      delta_t_, dets[j].mask));
         }
     }
 
