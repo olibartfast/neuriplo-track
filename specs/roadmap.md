@@ -30,14 +30,17 @@ The gap that blocks everything else: CI runs `ctest --test-dir build`, but the
 project never calls `enable_testing()` or registers a test. The command
 currently passes because there is nothing to run.
 
-- [ ] **Register a test suite.** Add `enable_testing()` and a `tests/` target so
-      `ctest` reports real results. Start with the pure-logic seams that need no
-      model or video: `mapClassesToIds`, `splitString` / `generateOutputPath` in
-      `app/src/utils.cpp`, and `CommandLineParser` argument validation.
-- [ ] **Tracker unit tests against synthetic detections.** Feed each
-      `BaseTracker` implementation a scripted sequence of `Detection` frames
-      (linear motion, occlusion gap, ID-swap bait) and assert on track identity
-      continuity. No detector or weights involved.
+- [x] **Register a test suite.** `enable_testing()` plus a `tests/` target behind
+      `NEURIPLO_TRACK_BUILD_TESTS`; three ctest suites (`trackers`,
+      `track_config`, `utils`) covering `splitString` / `generateOutputPath` and
+      the CLI → `TrackConfig` resolution
+      ([2026-08-18-ocsort-cbiou](2026-08-18-ocsort-cbiou/requirements.md)).
+      `CommandLineParser` argument validation is still uncovered: it calls
+      `std::exit` on failure, so it needs a seam before it can be tested.
+- [x] **Tracker unit tests against synthetic detections.** Every `BaseTracker`
+      implementation is driven through scripted `Detection` frames — linear
+      motion, occlusion gap, crossing objects, class filtering, degenerate
+      input — with identity continuity asserted for OC-SORT and C-BIoU.
 - [ ] **Pin the floating dependencies.** `NEURIPLO_VERSION="master"` and
       `BYTETRACK_VERSION="main"` mean two builds a week apart are not the same
       build — contradicting the reproducibility principle in
@@ -52,10 +55,10 @@ currently passes because there is nothing to run.
       parse body is a stub that leaves `config.input_sizes` empty
       (`app/src/CommandLineParser.cpp`). Support `H,W` for fixed-channel models
       and `C,H,W` for fully dynamic ones, with validation and a clear error.
-- [ ] **Expose tracker tuning parameters.** `TrackConfig` carries `max_age`,
-      `min_hits`, `iou_threshold`, `track_buffer`, `track_thresh`,
-      `high_thresh`, and `match_thresh`, but nothing on the CLI can set them —
-      comparing trackers today means recompiling.
+- [x] **Expose tracker tuning parameters.** Every `TrackConfig` field is now a
+      CLI flag; unset flags fall back to per-algorithm defaults resolved in
+      `makeTrackConfig` (`app/src/utils.cpp`)
+      ([2026-08-18-ocsort-cbiou](2026-08-18-ocsort-cbiou/requirements.md)).
 - [ ] **Fail fast on BoTSORT config paths.** Missing `--reid_onnx` or an
       unreadable INI should be a startup error naming the missing file, not a
       failure deep in the first frame.
@@ -89,10 +92,25 @@ a number.
 
 ## Phase 5 — Capability
 
-- [ ] **Additional trackers.** Extend along the existing wrapper path
-      (OC-SORT, C-BIoU, McByte, StrongSORT) following the five-step procedure in
-      `AGENTS.md`. See the benchmark table in `docs/Tracking_Algorithms.md` for
-      what each buys over the three already integrated.
+- [x] **OC-SORT and C-BIoU.** Implemented in-tree from the papers, wrapped behind
+      `BaseTracker`, and selectable as `--tracker=OCSORT` / `--tracker=CBIoU`
+      ([2026-08-18-ocsort-cbiou](2026-08-18-ocsort-cbiou/requirements.md)).
+      Both are motion-only, so neither adds a dependency or a model asset.
+- [ ] **Remaining trackers.** McByte extends BoT-SORT with a *temporally
+      propagated* mask as an association cue: SAM seeds a tracklet's mask from
+      its box, Cutie propagates it across frames. `neuriplo-tasks` already has
+      instance segmentation (`InstanceSegmentationTask`), but that yields
+      per-frame per-detection masks, not a per-tracklet propagated one — no
+      SAM/Cutie-equivalent task exists upstream yet. Its non-mask half
+      (clear-match locking around the assignment step) is implementable today.
+      StrongSORT would reuse the BoTSORT Re-ID path; it has no row in the
+      benchmark table in `docs/Tracking_Algorithms.md`, because the Roboflow
+      suite does not implement it.
+- [ ] **Let masks reach the tracker.** `MultiObjectTrackingApp::processVideo`
+      keeps only `Detection` from the task result variant, so an
+      `InstanceSegmentation` model's masks are discarded, and
+      `BaseTracker::update` has no way to carry them. A prerequisite for any
+      mask-conditioned association, McByte's or otherwise.
 - [ ] **Batch and multi-stream processing.** `AppConfig::batch_size` exists and
       is parsed, but the pipeline processes one source frame-by-frame.
 - [ ] **Performance instrumentation.** Per-stage timing (detect / track / draw)
