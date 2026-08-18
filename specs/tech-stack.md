@@ -1,0 +1,147 @@
+# Tech Stack
+
+## Language & Toolchain
+
+| Item | Version / Setting | Source |
+|------|-------------------|--------|
+| Language | C++20 (`CMAKE_CXX_STANDARD 20`, required) | `CMakeLists.txt` |
+| Build system | CMake ≥ 3.20 | `versions.env` (`CMAKE_MIN_VERSION`) |
+| Compiler | GCC ≥ 8.0 (MSVC supported in warning config) | `README.md`, `CMakeLists.txt` |
+| Generator (CI) | Ninja | `.github/workflows/ci.yml` |
+| Warnings | `-Wall -Wextra -Wpedantic` (`/W4` on MSVC); `WERROR=ON` adds `-Werror` / `/WX` | `CMakeLists.txt` |
+| Compile DB | `CMAKE_EXPORT_COMPILE_COMMANDS ON` (clangd) | `CMakeLists.txt` |
+
+## System Dependencies
+
+Minimum versions are declared in `versions.env` and enforced by
+`cmake/DependencyValidation.cmake`.
+
+| Dependency | Minimum | Role |
+|------------|---------|------|
+| OpenCV | 4.6.0 | Video I/O, image types, visualization, GMC/Re-ID support |
+| glog | 0.6.0 | Application logging (`LOG(INFO)` / `LOG(ERROR)`) |
+| Eigen3 | 3.3.0 | Linear algebra for Kalman filtering and matching |
+
+```bash
+sudo apt install -y build-essential cmake libopencv-dev libgoogle-glog-dev libeigen3-dev
+```
+
+## Fetched Dependencies
+
+Pulled at configure time via `FetchContent` into `build/_deps/`. Versions are
+read from `versions.env` by `cmake/versions.cmake`.
+
+| Dependency | Pin | Role |
+|------------|-----|------|
+| [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks) | `v0.6.0` | CV task layer and shared types (`Detection`, `TaskFactory`) |
+| [neuriplo](https://github.com/olibartfast/neuriplo) | `master` | Unified inference interface across backends |
+| [ByteTrack-cpp](https://github.com/Vertical-Beach/ByteTrack-cpp) | `main` | ByteTrack implementation |
+
+`neuriplo-tasks` and `neuriplo` are auto-detected as **sibling checkouts**: if
+`../neuriplo-tasks` or `../neuriplo` exists with a `CMakeLists.txt`, CMake uses
+the local tree instead of fetching (via `FETCHCONTENT_SOURCE_DIR_*`). Useful for
+cross-repo development.
+
+## Inference Backends
+
+Selected at configure time with `-DDEFAULT_BACKEND=<backend>`; default in
+`CMakeLists.txt` is `ONNX_RUNTIME`.
+
+| Backend | Setup |
+|---------|-------|
+| `OPENCV_DNN` | None beyond OpenCV |
+| `ONNX_RUNTIME` | Auto-downloads 1.19.2 (linux-x64-gpu) to `$HOME/dependencies/`, or set `ONNX_RUNTIME_DIR` |
+| `TENSORRT` | Per [neuriplo](https://github.com/olibartfast/neuriplo#-requirements) |
+| `LIBTORCH` | Per neuriplo |
+| `OPENVINO` | Per neuriplo |
+| `LIBTENSORFLOW` | Per neuriplo |
+
+ONNX Runtime headers/libs are validated at configure time; the CUDA provider
+(`onnxruntime_providers_cuda`) is optional and falls back to CPU.
+
+## Vendored Tracker Sources
+
+| Tracker | Location | Notes |
+|---------|----------|-------|
+| SORT | `trackers/SORT/` | Kalman tracker + Hungarian assignment, in-tree |
+| BoTSORT | `trackers/BoTSORT/` | In-tree; Kalman (const-velocity and acceleration-based), `lapjv` matching, global motion compensation, ONNX Re-ID |
+| ByteTrack | fetched | Adapted through `ByteTrackWrapper` |
+
+BoTSORT is configured through INI files in `trackers/BoTSORT/config/`:
+`tracker.ini`, `gmc.ini`, `reid.ini`. It is the only tracker that requires the
+frame (for Re-ID feature extraction).
+
+## Build Targets & Options
+
+| Option | Default | Effect |
+|--------|---------|--------|
+| `DEFAULT_BACKEND` | `ONNX_RUNTIME` | Inference backend selection |
+| `CMAKE_BUILD_TYPE` | — | `Release` for deployment, `Debug` in the strict-warning CI job |
+| `BUILD_ONLY_LIB` | `OFF` | Build the `trackers` shared library without the CLI app |
+| `WERROR` | `OFF` | Treat warnings as errors |
+
+Targets: `trackers` (SHARED library) and `neuriplo-track` (CLI executable, built
+unless `BUILD_ONLY_LIB=ON`).
+
+## Repository Layout
+
+```
+app/           CLI application (neuriplo-track binary)
+  inc/         AppConfig, CommandLineParser, MultiObjectTrackingApp, utils
+  src/         Implementations
+trackers/      SORT/, BoTSORT/, *Wrapper.cpp
+include/       BaseTracker, TrackConfig, TrackedObject, wrapper headers
+cmake/         versions.cmake, DependencyValidation.cmake
+docs/          Architecture, algorithms, build, MOT guide, e2e test
+specs/         Product specs (this folder)
+scripts/       setup_dependencies.sh, mot_docker_cpu.sh
+```
+
+## Core Types
+
+| Type | Header | Role |
+|------|--------|------|
+| `BaseTracker` | `include/BaseTracker.hpp` | Abstract interface; `update(detections, frame)` → `TrackedObject` |
+| `TrackConfig` | `include/TrackConfig.hpp` | Per-tracker parameters (SORT age/hits/IoU, ByteTrack buffer/thresholds, BoTSORT config paths) |
+| `TrackedObject` | `include/TrackedObject.hpp` | Tracker output |
+| `AppConfig` | `app/inc/AppConfig.hpp` | CLI-level config (source, weights, backend settings, output) |
+| `neuriplo_tasks::Detection` | fetched | Detection type flowing into every tracker |
+
+## Tooling
+
+| Concern | Tool | Config |
+|---------|------|--------|
+| Formatting | clang-format | `.clang-format` |
+| Static analysis | clang-tidy | `.clang-tidy` |
+| Pre-commit | pre-commit | `.pre-commit-config.yaml` |
+| CI | GitHub Actions | `.github/workflows/ci.yml`, `lint.yml`, `.github/actions/setup-deps` |
+| Debugging | VS Code | `.vscode/launch.json` |
+
+CI runs on `ubuntu-24.04`: a Release/Ninja build with ccache plus a
+Debug + `WERROR=ON` job. Markdown and `docs/**` changes are excluded from CI
+triggers.
+
+## Deployment
+
+| Artifact | File | Notes |
+|----------|------|-------|
+| GPU image | `Dockerfile`, `docker-compose.yml` | Run with `--gpus all` |
+| CPU image | `Dockerfile.cpu`, `docker-compose.cpu.yml` | No CUDA required |
+
+Details in [`DOCKER.md`](../DOCKER.md).
+
+## CLI Surface
+
+```bash
+./neuriplo-track \
+  --type=<model_type> --source=<video|stream> --labels=<labels_file> \
+  --weights=<model> --tracker=<SORT|ByteTrack|BoTSORT> --classes=<a,b> \
+  [--use-gpu] [--output=<path>] [--display]
+```
+
+BoTSORT additionally needs `--tracker_config` and `--reid_onnx`, and usually
+`--gmc_config` / `--reid_config`.
+
+## License
+
+MIT ([`LICENSE`](../LICENSE)).
