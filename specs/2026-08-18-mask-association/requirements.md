@@ -97,6 +97,20 @@ including a future McByte.
    rather than caused: any use of the mask type from the shared library would
    have hit it.
 
+8. **A mask is evidence about a single frame.** When a track goes unmatched its
+   stored mask is dropped, so the next association falls back to box overlap.
+   Added after review: keeping it meant a track being recovered after a gap was
+   compared against a mask still sitting at the pre-gap position, which scores
+   zero overlap and vetoes the box match. At `w = 1` that turned the cue into a
+   regression of OC-SORT's and C-BIoU's occlusion recovery — the opposite of
+   what the feature is for, and a direct consequence of masks not being
+   propagated.
+9. **Plain detections ride along as mask-less entries.** Also after review: the
+   application chose the mask overload whenever any segmentation was present,
+   which would drop plain `Detection` results from tracking if a frame ever
+   carried both. No current task emits mixed results, so this is hardening, not
+   a fix for observed behaviour.
+
 ## Constraints and Context
 
 - `trackers` must keep building with `BUILD_ONLY_LIB=ON`, so the mask utility

@@ -35,7 +35,10 @@ the score becomes
 ```
 
 where `maskIoU` compares the detector's mask for the candidate detection with
-the mask of the track's **last observation**. At `w = 0` (the default) nothing
+the mask of the track's **last observation**. A track's mask is discarded the
+moment a frame passes without a detection for it: the mask describes where the
+object was on the frame it was seen, and nothing carries it forward, so a track
+being recovered after a gap is matched on boxes alone. At `w = 0` (the default) nothing
 changes. At `w = 1` association is decided by mask overlap alone. Pairs where
 either side has no mask keep their box score, so a stream in which only some
 detections are segmented still tracks normally.
@@ -63,8 +66,11 @@ it, while a propagated mask would still be tracking it.
   worse cue than boxes; start at `w = 0.3`–`0.5` rather than `1.0`.
 - **Per-frame cost.** Overlap is computed only where two mask crops intersect,
   and the crop is skipped entirely at `w = 0`, but it is still work per pair.
-- **No help across gaps.** A track that is not detected has no new mask, so
-  recovery still rests on OC-SORT's ORU/OCR and C-BIoU's buffers.
+- **No help across gaps.** A track that is not detected has no new mask, and
+  its previous one is dropped rather than reused at a stale position, so
+  recovery rests entirely on OC-SORT's ORU/OCR and C-BIoU's buffers. This is the
+  concrete cost of not propagating masks, and it is why McByte pairs SAM with
+  Cutie rather than reading the detector's masks alone.
 
 ---
 

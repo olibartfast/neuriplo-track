@@ -60,7 +60,12 @@ cv::Rect_<float> OCSortKalmanTracker::predict() {
 }
 
 void OCSortKalmanTracker::markMissed() {
-    // Nothing to correct; predict() has already aged the track.
+    // predict() has already aged the track, so there is nothing to correct.
+    // The mask, though, has to go: it describes where the object was on the
+    // frame it was last seen, and nothing propagates it forward. Keeping it
+    // would let a stale region score zero overlap against the detection that
+    // recovers the track, blocking exactly the recovery ORU and OCR exist for.
+    last_mask_ = tracking::MaskRegion{};
 }
 
 void OCSortKalmanTracker::rememberObservationState() {

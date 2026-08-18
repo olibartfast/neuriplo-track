@@ -139,19 +139,28 @@ void MultiObjectTrackingApp::processVideo(const std::string &source) {
         // available as an association cue.
         std::vector<neuriplo_tasks::Detection> detections;
         std::vector<neuriplo_tasks::InstanceSegmentation> segmentations;
+        bool any_mask = false;
         for (const auto &result : results) {
             if (std::holds_alternative<neuriplo_tasks::Detection>(result)) {
-                detections.push_back(std::get<neuriplo_tasks::Detection>(result));
+                const auto &detection = std::get<neuriplo_tasks::Detection>(result);
+                detections.push_back(detection);
+
+                // Carried along as a mask-less entry so that a frame holding
+                // both kinds of result does not lose its plain detections when
+                // the mask overload is chosen below.
+                neuriplo_tasks::InstanceSegmentation carrier;
+                static_cast<neuriplo_tasks::Detection &>(carrier) = detection;
+                segmentations.push_back(std::move(carrier));
             } else if (std::holds_alternative<neuriplo_tasks::InstanceSegmentation>(result)) {
                 const auto &segmentation = std::get<neuriplo_tasks::InstanceSegmentation>(result);
                 segmentations.push_back(segmentation);
                 detections.push_back(static_cast<const neuriplo_tasks::Detection &>(segmentation));
+                any_mask = true;
             }
         }
 
         // Run tracking
-        auto tracks =
-            segmentations.empty() ? tracker_->update(detections, frame) : tracker_->update(segmentations, frame);
+        auto tracks = any_mask ? tracker_->update(segmentations, frame) : tracker_->update(detections, frame);
 
         // Visualize results
         drawDetections(frame, detections);
