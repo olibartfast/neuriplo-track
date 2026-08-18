@@ -1,5 +1,11 @@
 # Feature Requirements — mask-conditioned association
 
+> **Historical record.** Written before the work, delivered in PR #4, and not
+> maintained afterwards. For what is true today see the constitution in
+> [../mission.md](../mission.md), [../tech-stack.md](../tech-stack.md) and
+> [../roadmap.md](../roadmap.md), or [specs/README.md](../README.md) for how
+> these documents relate.
+
 Roadmap phase: [Phase 5 — Capability](../roadmap.md), the "Let masks reach the
 tracker" item, plus the mask half of the "Remaining trackers" item.
 
