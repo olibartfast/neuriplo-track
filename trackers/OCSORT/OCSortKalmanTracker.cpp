@@ -15,6 +15,8 @@ OCSortKalmanTracker::OCSortKalmanTracker(const cv::Rect_<float> &box, float det_
     : score(det_score), class_id(det_class_id), delta_t_(delta_t > 0 ? delta_t : 1) {
     initKalmanFilter(box);
 
+    rememberObservationState();
+
     id = id_counter_++;
     last_observation_ = box;
     has_observation_ = true;
@@ -60,6 +62,11 @@ void OCSortKalmanTracker::markMissed() {
     // Nothing to correct; predict() has already aged the track.
 }
 
+void OCSortKalmanTracker::rememberObservationState() {
+    state_at_observation_ = kf_.statePost.clone();
+    covariance_at_observation_ = kf_.errorCovPost.clone();
+}
+
 void OCSortKalmanTracker::correct(const cv::Rect_<float> &box) {
     measurement_.at<float>(0, 0) = box.x + box.width / 2;
     measurement_.at<float>(1, 0) = box.y + box.height / 2;
@@ -93,12 +100,17 @@ void OCSortKalmanTracker::update(const cv::Rect_<float> &box, float det_score) {
         const float norm = std::sqrt(dx * dx + dy * dy);
         velocity_ = norm > 1e-6f ? cv::Point2f(dx / norm, dy / norm) : cv::Point2f(0.0f, 0.0f);
 
-        // ORU: the track just came back after a gap, so the filter has been
-        // running on predictions only. Replay it over a virtual trajectory
-        // interpolated between the last real observation and this one, which
-        // keeps the accumulated prediction error from being baked into the state.
-        if (time_since_update > 1) {
+        // ORU: the track just came back after a gap, during which the filter
+        // ran on predictions only. Rewind it to the state it had at the last
+        // real observation, then replay a virtual trajectory interpolated up to
+        // this observation. Rewinding is the point: replaying on top of the
+        // drifted state would keep the prediction-only error, and would also
+        // integrate more frames than actually elapsed.
+        if (time_since_update > 1 && !state_at_observation_.empty()) {
             const int steps = time_since_update;
+            kf_.statePost = state_at_observation_.clone();
+            kf_.errorCovPost = covariance_at_observation_.clone();
+
             for (int i = 1; i < steps; ++i) {
                 const float alpha = static_cast<float>(i) / static_cast<float>(steps);
                 const cv::Rect_<float> virtual_box(
@@ -106,9 +118,13 @@ void OCSortKalmanTracker::update(const cv::Rect_<float> &box, float det_score) {
                     last_observation_.y + alpha * (box.y - last_observation_.y),
                     last_observation_.width + alpha * (box.width - last_observation_.width),
                     last_observation_.height + alpha * (box.height - last_observation_.height));
-                correct(virtual_box);
                 kf_.predict();
+                correct(virtual_box);
             }
+
+            // One more step so the caller's correction below lands on the
+            // current frame: exactly `steps` frames are integrated in total.
+            kf_.predict();
         }
     }
 
@@ -122,6 +138,7 @@ void OCSortKalmanTracker::update(const cv::Rect_<float> &box, float det_score) {
     hit_streak += 1;
 
     correct(box);
+    rememberObservationState();
 }
 
 cv::Rect_<float> OCSortKalmanTracker::state() const {

@@ -12,6 +12,12 @@ namespace {
 
 constexpr float kPi = 3.14159265358979323846f;
 
+// Cost given to a pair that is already below the IoU threshold. The solver must
+// assign min(rows, cols) pairs whatever the costs are, so making invalid edges
+// expensive stops one of them from displacing a valid pairing elsewhere in the
+// matrix; the post-assignment threshold check then discards them.
+constexpr double kUnmatchableCost = 1e6;
+
 float iou(const cv::Rect_<float> &a, const cv::Rect_<float> &b) {
     const float intersection = (a & b).area();
     const float uni = a.area() + b.area() - intersection;
@@ -73,12 +79,17 @@ void OCSort::associateWithMomentum(const std::vector<DetectionBox> &detections,
             }
 
             // The solver requires non-negative costs, so the reward form
-            // (IoU + inertia * direction) is expressed as a distance. Since
-            // direction_cost lies in [-0.5, 0.5], offsetting it by 0.5 keeps
-            // every entry non-negative; the offset is constant per column and
-            // therefore does not change the optimal assignment.
+            // (IoU + inertia * direction) is expressed as a distance. The
+            // offset that keeps it non-negative has to be the same for every
+            // entry: when there are more detections than tracks the solver
+            // chooses a subset of columns, so an offset scaled by detection
+            // score would quietly penalise confident detections.
+            const float score = std::max(0.0f, std::min(1.0f, detections[j].score));
             cost_matrix[i][j] =
-                static_cast<double>(1.0f - iou_matrix[i][j] + inertia_ * (0.5f - direction_cost) * detections[j].score);
+                static_cast<double>((1.0f - iou_matrix[i][j]) + inertia_ * 0.5f - inertia_ * direction_cost * score);
+            if (iou_matrix[i][j] < iou_threshold_) {
+                cost_matrix[i][j] = kUnmatchableCost;
+            }
         }
     }
 
@@ -135,7 +146,8 @@ void OCSort::associateWithObservations(const std::vector<DetectionBox> &detectio
         const cv::Rect_<float> &observation = trackers_[track_indices[i]]->lastObservation();
         for (size_t j = 0; j < detection_indices.size(); ++j) {
             iou_matrix[i][j] = iou(observation, detections[detection_indices[j]].box);
-            cost_matrix[i][j] = 1.0 - static_cast<double>(iou_matrix[i][j]);
+            cost_matrix[i][j] =
+                iou_matrix[i][j] < iou_threshold_ ? kUnmatchableCost : 1.0 - static_cast<double>(iou_matrix[i][j]);
         }
     }
 

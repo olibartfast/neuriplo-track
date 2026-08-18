@@ -133,6 +133,27 @@ offset is constant per column.
   `tests/test_track_config.cpp`, and `createTracker`'s `nullptr` fallback is
   unchanged.
 
+### Post-review changes (2026-08-18)
+
+Automated review (Qodo on the PR, Codex on the same diff) raised five findings.
+All were checked against the code rather than taken at face value; four were
+confirmed and fixed here, one was judged correct in principle but matching the
+reference implementations.
+
+| Finding | Verdict | Evidence |
+|---------|---------|----------|
+| OCM offset scaled by detection score | **Confirmed, fixed** | Reproduced directly against `HungarianAlgorithm`: with equal IoU and no direction information, a track chose the 0.4-confidence detection over the 0.9 one. Now a global offset. Regression test `testConfidenceDoesNotPenalise` fails on the pre-fix code. |
+| ORU replays on the drifted state | **Confirmed, fixed, no measured behavioural change** | The defect is real — the filter integrated `2·steps−1` frames for a `steps`-frame gap. But a sweep of 882 gap-recovery configurations (box size × speed × gap length × history depth) found **0** in which identity outcomes differ before and after the fix. Kept as a correctness fix; no test claims to cover it. |
+| C-BIoU gap inflates velocity | **Confirmed, fixed** | The same sweep found **228 of 882** configurations where the fix turns a lost identity into a kept one, with no configuration made worse. `testRecoveryAfterLongGapIsStable` uses one of them (25px boxes, 8px/frame, 10-frame gap, history of 2) and fails on the pre-fix code. |
+| Post-filtered Hungarian can drop valid matches | **Correct in principle** | The bundled SORT and the reference OC-SORT implementation both assign then filter. Fixed anyway by gating below-threshold edges with a prohibitive cost, which can only increase the number of threshold-valid matches. Not separately tested; no existing assertion changed. |
+| Tuning values unvalidated | **Confirmed, fixed** | `validateTrackerOverrides` rejects out-of-range values naming the flag; covered by `testOverrideValidation`. |
+
+Two of the tests written for these fixes initially passed against the pre-fix
+code — they proved nothing. Both were reworked until they failed without the
+fix: the first had accepted a newly created track sitting at the right position
+as evidence of preserved identity, and the second used parameters where the
+inflated velocity stayed inside the buffered matching radius.
+
 ### Deviations from the specification
 
 None. Scope, decisions, and out-of-scope boundaries in

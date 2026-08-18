@@ -76,6 +76,11 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
     // makeTrackConfig() can tell "unset" from "set to the default value".
     parseTrackerOverrides(parser, config.trackerOverrides);
 
+    if (const auto problem = validateTrackerOverrides(config.trackerOverrides)) {
+        LOG(ERROR) << *problem;
+        std::exit(1);
+    }
+
     // Detection/inference settings
     config.use_gpu = parser.get<bool>("use-gpu");
     config.confidenceThreshold = parser.get<float>("min_confidence");

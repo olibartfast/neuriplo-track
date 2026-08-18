@@ -227,6 +227,90 @@ void testConfidencePropagation() {
     }
 }
 
+// A track offered two candidates must not be pushed toward the lower-confidence
+// one. The association cost adds a constant to keep it non-negative; if that
+// constant is scaled by detection score, then with more detections than tracks
+// (where the solver picks a subset of columns) a confident detection is
+// penalised relative to a weak one.
+void testConfidenceDoesNotPenalise() {
+    TrackConfig config = baseConfig(30);
+    config.ocsort_det_thresh = 0.1f; // so the weak candidate is not filtered out
+    OCSortWrapper tracker(config);
+
+    // Frame 0: one object establishes the track.
+    const std::vector<TrackedObject> established =
+        tracker.update(std::vector<neuriplo_tasks::Detection>{makeDetection(100, 100, 100, 100, 0.9f, 0)});
+    CHECK(established.size() == 1);
+    const int original_id = established.empty() ? -1 : established.front().track_id;
+
+    // Frame 1: two candidates. The confident one also overlaps slightly better
+    // (0.515 vs 0.493), so it is the correct answer on every count; only a
+    // score-scaled offset could push the association to the weak one.
+    const std::vector<neuriplo_tasks::Detection> candidates = {
+        makeDetection(132, 100, 100, 100, 0.9f, 0), // IoU 0.515 with the track
+        makeDetection(66, 100, 100, 100, 0.4f, 0),  // IoU 0.493 with the track
+    };
+    const std::vector<TrackedObject> tracks = tracker.update(candidates);
+
+    // The unmatched candidate starts a track of its own, so the assertion has
+    // to be about the original identity, not about any track being there.
+    bool followed_confident = false;
+    for (const auto &track : tracks) {
+        if (track.track_id == original_id) {
+            followed_confident = std::fabs(track.x - 132.0f) < 1e-3f;
+        }
+    }
+    CHECK(followed_confident);
+}
+
+// A small object crossing a long gap. C-BIoU's motion model averages the
+// displacement over its observation history; if that history does not record
+// which frame each observation arrived on, the post-gap observation is treated
+// as one frame after its predecessor and the estimated velocity is inflated by
+// the length of the gap, so the prediction overshoots and the recovered
+// identity is lost again. These parameters (small boxes, long gap, short
+// history) are where the inflation exceeds the buffered matching radius.
+void testRecoveryAfterLongGapIsStable() {
+    constexpr int kGapStart = 6;
+    constexpr int kGapFrames = 10;
+
+    for (const auto &entry : allTrackers()) {
+        if (!entry.recovers_after_gap) {
+            continue;
+        }
+
+        TrackConfig config = baseConfig(40);
+        config.cbiou_motion_n = 2;
+        auto tracker = entry.factory(config);
+
+        int id_before = -1;
+        std::set<int> ids_after;
+        for (int frame = 0; frame < 30; ++frame) {
+            std::vector<neuriplo_tasks::Detection> detections;
+            const bool occluded = frame >= kGapStart && frame < kGapStart + kGapFrames;
+            if (!occluded) {
+                detections.push_back(makeDetection(20 + 8 * frame, 100, 25, 25, 0.9f, 0));
+            }
+
+            const std::vector<TrackedObject> tracks = tracker->update(detections);
+            if (frame == kGapStart - 1 && tracks.size() == 1) {
+                id_before = tracks.front().track_id;
+            }
+            // Several frames after recovery, not just the first one: an
+            // overshooting velocity shows up on the frames that follow.
+            if (frame >= kGapStart + kGapFrames + 2) {
+                for (const auto &track : tracks) {
+                    ids_after.insert(track.track_id);
+                }
+            }
+        }
+
+        CHECK_LABELED(id_before > 0, entry.name);
+        CHECK_LABELED(ids_after.size() == 1, entry.name);
+        CHECK_LABELED(!ids_after.empty() && *ids_after.begin() == id_before, entry.name);
+    }
+}
+
 } // namespace
 
 int main() {
@@ -236,5 +320,7 @@ int main() {
     testClassFiltering();
     testDegenerateInput();
     testConfidencePropagation();
+    testConfidenceDoesNotPenalise();
+    testRecoveryAfterLongGapIsStable();
     return test_util::summary("trackers");
 }

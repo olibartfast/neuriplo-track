@@ -55,6 +55,9 @@ class OCSortKalmanTracker {
 
   private:
     void initKalmanFilter(const cv::Rect_<float> &box);
+    // Snapshots the filter as it stands after a real observation, so ORU can
+    // rewind to it instead of replaying on top of prediction-only drift.
+    void rememberObservationState();
     void correct(const cv::Rect_<float> &box);
     cv::Rect_<float> boxFromState(float cx, float cy, float s, float r) const;
 
@@ -62,6 +65,8 @@ class OCSortKalmanTracker {
 
     cv::KalmanFilter kf_;
     cv::Mat measurement_;
+    cv::Mat state_at_observation_;
+    cv::Mat covariance_at_observation_;
 
     std::map<int, cv::Rect_<float>> observations_;
     cv::Rect_<float> last_observation_{};

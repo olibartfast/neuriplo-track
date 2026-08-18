@@ -124,6 +124,61 @@ void testPassThrough() {
     CHECK(resolved.classes_to_track == std::set<int>({0, 2}));
 }
 
+// Out-of-range tuning values must be rejected with a message naming the flag,
+// not passed into a tracker.
+void testOverrideValidation() {
+    TrackerOverrides valid;
+    valid.max_age = 30;
+    valid.min_hits = 3;
+    valid.iou_threshold = 0.3f;
+    valid.cbiou_b1 = 0.3f;
+    valid.cbiou_b2 = 0.5f;
+    CHECK(!validateTrackerOverrides(valid).has_value());
+
+    const auto rejects = [](const TrackerOverrides &overrides, const std::string &flag) {
+        const auto problem = validateTrackerOverrides(overrides);
+        return problem && problem->find(flag) != std::string::npos;
+    };
+
+    TrackerOverrides negative_age;
+    negative_age.max_age = -1;
+    CHECK(rejects(negative_age, "--max_age"));
+
+    TrackerOverrides zero_hits;
+    zero_hits.min_hits = 0;
+    CHECK(rejects(zero_hits, "--min_hits"));
+
+    TrackerOverrides negative_iou;
+    negative_iou.iou_threshold = -0.2f;
+    CHECK(rejects(negative_iou, "--iou_threshold"));
+
+    TrackerOverrides high_iou;
+    high_iou.iou_threshold = 1.5f;
+    CHECK(rejects(high_iou, "--iou_threshold"));
+
+    TrackerOverrides bad_inertia;
+    bad_inertia.ocsort_inertia = 2.0f;
+    CHECK(rejects(bad_inertia, "--inertia"));
+
+    TrackerOverrides bad_delta;
+    bad_delta.ocsort_delta_t = 0;
+    CHECK(rejects(bad_delta, "--delta_t"));
+
+    TrackerOverrides bad_buffer;
+    bad_buffer.cbiou_b1 = -0.1f;
+    CHECK(rejects(bad_buffer, "--biou_b1"));
+
+    TrackerOverrides bad_motion;
+    bad_motion.cbiou_motion_n = 0;
+    CHECK(rejects(bad_motion, "--motion_n"));
+
+    // b1 > b2 is unusual but legal: the cascade still runs.
+    TrackerOverrides reversed_buffers;
+    reversed_buffers.cbiou_b1 = 0.6f;
+    reversed_buffers.cbiou_b2 = 0.2f;
+    CHECK(!validateTrackerOverrides(reversed_buffers).has_value());
+}
+
 } // namespace
 
 int main() {
@@ -132,5 +187,6 @@ int main() {
     testNewTrackerDefaults();
     testOverridesWin();
     testPassThrough();
+    testOverrideValidation();
     return test_util::summary("track_config");
 }

@@ -116,6 +116,27 @@ close the motion-only gap identified against the
    exists and is left at zero by the existing wrappers; the new ones fill it
    from the associated detection. No existing wrapper is changed.
 
+10. **Association costs are non-negative and threshold-gated.** The bundled
+    `HungarianAlgorithm` only warns on negative costs, so costs are expressed as
+    distances. Two properties follow from how the solver works, both added after
+    review: the offset that keeps costs non-negative must be the *same for every
+    entry* (the solver picks a subset of columns when detections outnumber
+    tracks, so a per-column offset scaled by detection score would penalise
+    confident detections), and pairs already below the IoU threshold are given a
+    prohibitive cost rather than being filtered only after assignment, so an
+    invalid edge cannot displace a valid pairing.
+11. **ORU rewinds to a snapshot of the last real observation.** Replaying the
+    virtual trajectory on top of the drifted state both keeps the
+    prediction-only error and integrates more frames than actually elapsed. Each
+    real observation snapshots `statePost` / `errorCovPost`; re-association
+    restores it, replays, and advances exactly `time_since_update` frames.
+12. **C-BIoU observations carry their frame index.** The motion model divides
+    displacement by frames spanned, not by the number of stored observations, so
+    a gap cannot inflate the velocity estimate.
+13. **Tuning values are validated by a pure function.** `validateTrackerOverrides`
+    returns the first problem as a string and the parser reports and exits, so
+    the rules are testable without spawning a process.
+
 ## Constraints and Context
 
 - `BaseTracker::update(detections, frame)` is the only interface; the new

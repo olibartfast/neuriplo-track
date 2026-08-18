@@ -3,6 +3,7 @@
 #include "TrackConfig.hpp"
 
 #include <opencv2/opencv.hpp>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -18,3 +19,8 @@ std::string canonicalTrackerName(const std::string &trackingAlgorithm);
 // Builds the tracker configuration: TrackConfig defaults, then the defaults of
 // the selected algorithm, then whatever was set on the command line.
 TrackConfig makeTrackConfig(const AppConfig &config);
+
+// Checks tracker tuning values that were given on the command line. Returns the
+// first problem found, or an empty optional when every value is usable. Kept
+// separate from the parser so it can be tested without exiting the process.
+std::optional<std::string> validateTrackerOverrides(const TrackerOverrides &overrides);
