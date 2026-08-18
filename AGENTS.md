@@ -14,7 +14,7 @@ trackers/      Tracker implementations and wrappers
 include/       Public headers (BaseTracker, TrackConfig, TrackedObject, wrappers)
 cmake/         CMake modules (versions, dependency validation)
 docs/          Architecture and algorithm documentation
-specs/         Product specs: constitution (mission/tech-stack/roadmap) + dated feature packets
+specs/         Product specs: constitution (mission/tech-stack/roadmap) + dated feature packets; see specs/README.md
 tests/         ctest suite; scripted detections only, no model or video needed
 ```
 

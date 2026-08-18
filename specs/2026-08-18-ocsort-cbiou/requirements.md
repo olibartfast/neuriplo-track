@@ -1,5 +1,11 @@
 # Feature Requirements — OC-SORT and C-BIoU trackers
 
+> **Historical record.** Written before the work, delivered in PR #3, and not
+> maintained afterwards. For what is true today see the constitution in
+> [../mission.md](../mission.md), [../tech-stack.md](../tech-stack.md) and
+> [../roadmap.md](../roadmap.md), or [specs/README.md](../README.md) for how
+> these documents relate.
+
 Roadmap phase: [Phase 5 — Capability](../roadmap.md), first bullet ("Additional
 trackers"), plus the "Expose tracker tuning parameters" bullet from Phase 2 and
 the "Register a test suite" bullet from Phase 1, both pulled forward (see
