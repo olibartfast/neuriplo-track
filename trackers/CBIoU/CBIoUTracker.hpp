@@ -44,16 +44,16 @@ float bufferedIoU(const cv::Rect_<float> &a, const cv::Rect_<float> &b, float sc
 
 class CBIoUTrack {
   public:
-    CBIoUTrack(const cv::Rect_<float> &box, float score, int class_id, int motion_n);
+    CBIoUTrack(const cv::Rect_<float> &box, float score, int class_id, int motion_n, int frame);
 
     // Mean-displacement motion model: last observation plus the average
     // per-frame displacement over the buffered observation history.
     cv::Rect_<float> predict() const;
 
-    void update(const cv::Rect_<float> &box, float score, int class_id);
+    void update(const cv::Rect_<float> &box, float score, int class_id, int frame);
     void markMissed();
 
-    const cv::Rect_<float> &lastObservation() const { return observations_.back(); }
+    const cv::Rect_<float> &lastObservation() const { return observations_.back().box; }
 
     int id{};
     int time_since_update{};
@@ -67,7 +67,15 @@ class CBIoUTrack {
   private:
     static int id_counter_;
 
-    std::deque<cv::Rect_<float>> observations_;
+    // The frame index each observation arrived on. Without it, an observation
+    // that follows a gap would be treated as one frame after its predecessor
+    // and the estimated velocity would be inflated by the length of the gap.
+    struct Observation {
+        int frame{};
+        cv::Rect_<float> box;
+    };
+
+    std::deque<Observation> observations_;
     size_t motion_n_{5};
 };
 

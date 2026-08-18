@@ -24,7 +24,7 @@ if(NOT BUILD_ONLY_LIB)
         ${CMAKE_CURRENT_LIST_DIR}/../include
         ${OpenCV_INCLUDE_DIRS}
     )
-    target_link_libraries(test_track_config PRIVATE ${OpenCV_LIBS})
+    target_link_libraries(test_track_config PRIVATE ${OpenCV_LIBS} glog::glog)
     add_test(NAME track_config COMMAND test_track_config)
 
     add_executable(test_utils
@@ -38,6 +38,6 @@ if(NOT BUILD_ONLY_LIB)
         ${CMAKE_CURRENT_LIST_DIR}/../include
         ${OpenCV_INCLUDE_DIRS}
     )
-    target_link_libraries(test_utils PRIVATE ${OpenCV_LIBS})
+    target_link_libraries(test_utils PRIVATE ${OpenCV_LIBS} glog::glog)
     add_test(NAME utils COMMAND test_utils)
 endif()

@@ -4,6 +4,7 @@
 #include <cctype>
 #include <filesystem>
 #include <fstream>
+#include <glog/logging.h>
 #include <iostream>
 #include <sstream>
 
@@ -73,6 +74,56 @@ std::string canonicalTrackerName(const std::string &trackingAlgorithm) {
         return "CBIoU";
     }
     return "";
+}
+
+std::optional<std::string> validateTrackerOverrides(const TrackerOverrides &overrides) {
+    const auto belowMinimum = [](const char *flag, const std::optional<int> &value,
+                                 int minimum) -> std::optional<std::string> {
+        if (value && *value < minimum) {
+            return std::string("--") + flag + " must be at least " + std::to_string(minimum) + " (got " +
+                   std::to_string(*value) + ")";
+        }
+        return std::nullopt;
+    };
+    const auto outsideRange = [](const char *flag, const std::optional<float> &value, float low,
+                                 float high) -> std::optional<std::string> {
+        if (value && (!(*value >= low) || !(*value <= high))) {
+            return std::string("--") + flag + " must be between " + std::to_string(low) + " and " +
+                   std::to_string(high) + " (got " + std::to_string(*value) + ")";
+        }
+        return std::nullopt;
+    };
+
+    const std::optional<std::string> problems[] = {
+        belowMinimum("max_age", overrides.max_age, 0),
+        belowMinimum("min_hits", overrides.min_hits, 1),
+        outsideRange("iou_threshold", overrides.iou_threshold, 0.0f, 1.0f),
+        belowMinimum("track_buffer", overrides.track_buffer, 1),
+        outsideRange("track_thresh", overrides.track_thresh, 0.0f, 1.0f),
+        outsideRange("high_thresh", overrides.high_thresh, 0.0f, 1.0f),
+        outsideRange("match_thresh", overrides.match_thresh, 0.0f, 1.0f),
+        belowMinimum("delta_t", overrides.ocsort_delta_t, 1),
+        outsideRange("inertia", overrides.ocsort_inertia, 0.0f, 1.0f),
+        outsideRange("det_thresh", overrides.ocsort_det_thresh, 0.0f, 1.0f),
+        outsideRange("biou_b1", overrides.cbiou_b1, 0.0f, 5.0f),
+        outsideRange("biou_b2", overrides.cbiou_b2, 0.0f, 5.0f),
+        belowMinimum("motion_n", overrides.cbiou_motion_n, 1),
+    };
+
+    for (const auto &problem : problems) {
+        if (problem) {
+            return problem;
+        }
+    }
+
+    // The cascade searches a tight radius first and a wider one second; the
+    // reverse order is not an error, but it is almost certainly a mistake.
+    if (overrides.cbiou_b1 && overrides.cbiou_b2 && *overrides.cbiou_b1 > *overrides.cbiou_b2) {
+        LOG(WARNING) << "--biou_b1 (" << *overrides.cbiou_b1 << ") is larger than --biou_b2 (" << *overrides.cbiou_b2
+                     << "); the second cascade round is meant to search the wider radius";
+    }
+
+    return std::nullopt;
 }
 
 TrackConfig makeTrackConfig(const AppConfig &config) {

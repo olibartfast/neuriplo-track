@@ -10,6 +10,10 @@
 namespace cbiou {
 namespace {
 
+// See the note in OCSort.cpp: an invalid edge must not be able to displace a
+// valid pairing just because the solver has to assign min(rows, cols) pairs.
+constexpr double kUnmatchableCost = 1e6;
+
 bool isUsableBox(const cv::Rect_<float> &box) {
     return std::isfinite(box.x) && std::isfinite(box.y) && std::isfinite(box.width) && std::isfinite(box.height) &&
            box.width > 0.0f && box.height > 0.0f;
@@ -36,16 +40,16 @@ int CBIoUTrack::id_counter_ = 0;
 
 void CBIoUTrack::resetIdCounter() { id_counter_ = 0; }
 
-CBIoUTrack::CBIoUTrack(const cv::Rect_<float> &box, float det_score, int det_class_id, int motion_n)
+CBIoUTrack::CBIoUTrack(const cv::Rect_<float> &box, float det_score, int det_class_id, int motion_n, int frame)
     : score(det_score), class_id(det_class_id), motion_n_(motion_n > 0 ? static_cast<size_t>(motion_n) : 1) {
     id = id_counter_++;
     hits = 1;
     hit_streak = 1;
-    observations_.push_back(box);
+    observations_.push_back(Observation{frame, box});
 }
 
 cv::Rect_<float> CBIoUTrack::predict() const {
-    const cv::Rect_<float> &last = observations_.back();
+    const cv::Rect_<float> &last = observations_.back().box;
     if (observations_.size() < 2) {
         return last;
     }
@@ -53,9 +57,13 @@ cv::Rect_<float> CBIoUTrack::predict() const {
     // Mean per-frame displacement across the retained observations. No Kalman
     // filter, no acceleration term - the point of the paper is that a coarse
     // motion estimate plus a buffered matching space beats a confident but
-    // wrong prediction.
-    const cv::Rect_<float> &first = observations_.front();
-    const float intervals = static_cast<float>(observations_.size() - 1);
+    // wrong prediction. The divisor is the number of frames actually spanned,
+    // not the number of observations, so a gap does not inflate the estimate.
+    const cv::Rect_<float> &first = observations_.front().box;
+    const float intervals = static_cast<float>(observations_.back().frame - observations_.front().frame);
+    if (intervals <= 0.0f) {
+        return last;
+    }
     const float dx = (last.x - first.x) / intervals;
     const float dy = (last.y - first.y) / intervals;
     const float dw = (last.width - first.width) / intervals;
@@ -74,8 +82,8 @@ cv::Rect_<float> CBIoUTrack::predict() const {
     return predicted;
 }
 
-void CBIoUTrack::update(const cv::Rect_<float> &box, float det_score, int det_class_id) {
-    observations_.push_back(box);
+void CBIoUTrack::update(const cv::Rect_<float> &box, float det_score, int det_class_id, int frame) {
+    observations_.push_back(Observation{frame, box});
     while (observations_.size() > motion_n_ + 1) {
         observations_.pop_front();
     }
@@ -126,7 +134,8 @@ void CBIoUTracker::associate(const std::vector<DetectionBox> &detections,
     for (size_t i = 0; i < track_indices.size(); ++i) {
         for (size_t j = 0; j < detection_indices.size(); ++j) {
             iou_matrix[i][j] = bufferedIoU(predictions[track_indices[i]], detections[detection_indices[j]].box, buffer);
-            cost_matrix[i][j] = 1.0 - static_cast<double>(iou_matrix[i][j]);
+            cost_matrix[i][j] =
+                iou_matrix[i][j] < iou_threshold_ ? kUnmatchableCost : 1.0 - static_cast<double>(iou_matrix[i][j]);
         }
     }
 
@@ -173,7 +182,7 @@ std::vector<TrackBox> CBIoUTracker::update(const std::vector<DetectionBox> &dete
     for (size_t i = 0; i < tracks_.size(); ++i) {
         if (detection_for_track[i] >= 0) {
             const DetectionBox &detection = dets[static_cast<size_t>(detection_for_track[i])];
-            tracks_[i].update(detection.box, detection.score, detection.class_id);
+            tracks_[i].update(detection.box, detection.score, detection.class_id, frame_count_);
         } else {
             tracks_[i].markMissed();
         }
@@ -181,7 +190,7 @@ std::vector<TrackBox> CBIoUTracker::update(const std::vector<DetectionBox> &dete
 
     for (size_t j = 0; j < dets.size(); ++j) {
         if (!detection_matched[j]) {
-            tracks_.emplace_back(dets[j].box, dets[j].score, dets[j].class_id, motion_n_);
+            tracks_.emplace_back(dets[j].box, dets[j].score, dets[j].class_id, motion_n_, frame_count_);
         }
     }
 
