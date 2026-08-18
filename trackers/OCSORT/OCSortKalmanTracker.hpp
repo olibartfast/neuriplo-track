@@ -11,6 +11,8 @@
 //     a virtual trajectory when a track is re-associated after a gap.
 //
 #pragma once
+#include "MaskOverlap.hpp"
+
 #include <map>
 #include <opencv2/core/types.hpp>
 #include <opencv2/video/tracking.hpp>
@@ -19,7 +21,8 @@ namespace ocsort {
 
 class OCSortKalmanTracker {
   public:
-    OCSortKalmanTracker(const cv::Rect_<float> &box, float score, int class_id, int delta_t);
+    OCSortKalmanTracker(const cv::Rect_<float> &box, float score, int class_id, int delta_t,
+                        const tracking::MaskRegion &mask = tracking::MaskRegion{});
 
     // Advances the filter by one frame and returns the predicted box.
     cv::Rect_<float> predict();
@@ -27,6 +30,7 @@ class OCSortKalmanTracker {
     // Associates a real observation: estimates the OCM direction, replays the
     // filter over the virtual trajectory covering any gap (ORU), then corrects.
     void update(const cv::Rect_<float> &box, float score);
+    void update(const cv::Rect_<float> &box, float score, const tracking::MaskRegion &mask);
 
     // Marks a frame without an associated observation.
     void markMissed();
@@ -42,6 +46,9 @@ class OCSortKalmanTracker {
 
     // Unit-length direction of travel, or (0, 0) when it is not known yet.
     const cv::Point2f &velocityDirection() const { return velocity_; }
+
+    // Mask of the last observation; empty when the detector supplied none.
+    const tracking::MaskRegion &lastMask() const { return last_mask_; }
 
     static void resetIdCounter();
 
@@ -72,6 +79,7 @@ class OCSortKalmanTracker {
     cv::Rect_<float> last_observation_{};
     bool has_observation_{false};
     cv::Point2f velocity_{0.0f, 0.0f};
+    tracking::MaskRegion last_mask_;
     int delta_t_{3};
 };
 

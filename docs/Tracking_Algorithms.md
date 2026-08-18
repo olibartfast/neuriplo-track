@@ -3,6 +3,7 @@
 This document provides detailed information about the tracking algorithms implemented in the Multi-Object Tracking system.
 
 ## Table of Contents
+0. [Mask-conditioned association](#mask-association)
 1. [SORT (Simple Online and Realtime Tracking)](#sort)
 2. [BoTSORT (Bootstrapping and Track re-IDentification)](#botsort)
 3. [ByteTrack](#bytetrack)
@@ -13,6 +14,63 @@ This document provides detailed information about the tracking algorithms implem
 ## Related Documentation
 - **[Code Examples](Code_Examples.md)** - Detailed implementation code, configuration files, and integration patterns
 - **[System Architecture](System_Architecture.md)** - C++ design patterns and system structure
+
+---
+
+## Mask-conditioned association {#mask-association}
+
+Applies to **OC-SORT** and **C-BIoU**, and only when the detector is a
+segmentation model (`--type=yoloseg`, `yolov10seg`, `yolo26seg`, `rfdetrseg`,
+`ecseg`). Off by default.
+
+### What it does
+
+Association normally scores a track against a detection by box overlap. Boxes
+are a crude proxy for an object: two people passing each other can share almost
+the same box while sharing none of the same pixels. With `--mask_iou_weight w`,
+the score becomes
+
+```
+(1 - w) * boxIoU + w * maskIoU
+```
+
+where `maskIoU` compares the detector's mask for the candidate detection with
+the mask of the track's **last observation**. A track's mask is discarded the
+moment a frame passes without a detection for it: the mask describes where the
+object was on the frame it was seen, and nothing carries it forward, so a track
+being recovered after a gap is matched on boxes alone. At `w = 0` (the default) nothing
+changes. At `w = 1` association is decided by mask overlap alone. Pairs where
+either side has no mask keep their box score, so a stream in which only some
+detections are segmented still tracks normally.
+
+### What it is not
+
+This is **not** McByte. McByte's cue is a *temporally propagated* mask: SAM
+seeds a tracklet's mask from its box and Cutie carries that same mask forward
+frame by frame, so the mask holds identity independently of what the detector
+does on any given frame. Here the mask is simply whatever the segmentation model
+produced this frame — there is no propagation and no memory. The practical
+difference: if the detector misses an object, this cue has nothing to say about
+it, while a propagated mask would still be tracking it.
+
+### When it helps
+
+- Overlapping objects of similar size, where box overlap is ambiguous but the
+  pixels are clearly separate
+- Crowded scenes where boxes routinely contain more than one object
+- Any case where you would otherwise reach for a Re-ID model
+
+### Costs and limits
+
+- **Only as good as the detector's masks.** Coarse or flickering masks make a
+  worse cue than boxes; start at `w = 0.3`–`0.5` rather than `1.0`.
+- **Per-frame cost.** Overlap is computed only where two mask crops intersect,
+  and the crop is skipped entirely at `w = 0`, but it is still work per pair.
+- **No help across gaps.** A track that is not detected has no new mask, and
+  its previous one is dropped rather than reused at a stale position, so
+  recovery rests entirely on OC-SORT's ORU/OCR and C-BIoU's buffers. This is the
+  concrete cost of not propagating masks, and it is why McByte pairs SAM with
+  Cutie rather than reading the detector's masks alone.
 
 ---
 
@@ -449,6 +507,7 @@ evaluated on MOT17. Producing comparable numbers is
 | **Occlusion Handling** | Basic | Improved | Advanced (ORU/OCR) | Improved (buffered match) | Advanced |
 | **ID Switch Robustness** | Poor | Good | Good | Good | Excellent |
 | **Irregular Motion** | Poor | Poor | Fair | Good | Fair |
+| **Mask cue available** | No | No | Yes | Yes | No |
 | **Real-time Performance** | Excellent | Good | Excellent | Excellent | Fair |
 
 > **Note**: For detailed implementation code, configuration examples, and integration patterns, see the [Code Examples](Code_Examples.md) documentation.

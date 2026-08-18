@@ -7,6 +7,11 @@ set(SORT_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/SORT/Hungarian.cpp
 )
 
+# Shared tracker utilities
+set(TRACKER_COMMON_SOURCES
+    ${CMAKE_CURRENT_LIST_DIR}/common/MaskOverlap.cpp
+)
+
 # Set source files for OC-SORT
 set(OCSORT_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/OCSORT/OCSort.cpp
@@ -32,6 +37,7 @@ set(WRAPPER_SOURCES
 
 # Create the trackers library
 add_library(trackers SHARED
+    ${TRACKER_COMMON_SOURCES}
     ${SORT_SOURCES}
     ${OCSORT_SOURCES}
     ${CBIOU_SOURCES}
@@ -39,6 +45,7 @@ add_library(trackers SHARED
     ${WRAPPER_SOURCES}
 )
 set_source_files_properties(
+    ${TRACKER_COMMON_SOURCES}
     ${SORT_SOURCES}
     ${OCSORT_SOURCES}
     ${CBIOU_SOURCES}
@@ -56,6 +63,7 @@ endif()
 # Include directories
 target_include_directories(trackers PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/../include
+    ${CMAKE_CURRENT_LIST_DIR}/common
     ${CMAKE_CURRENT_LIST_DIR}/SORT
     ${CMAKE_CURRENT_LIST_DIR}/OCSORT
     ${CMAKE_CURRENT_LIST_DIR}/CBIoU

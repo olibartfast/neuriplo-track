@@ -11,8 +11,9 @@ int OCSortKalmanTracker::id_counter_ = 0;
 
 void OCSortKalmanTracker::resetIdCounter() { id_counter_ = 0; }
 
-OCSortKalmanTracker::OCSortKalmanTracker(const cv::Rect_<float> &box, float det_score, int det_class_id, int delta_t)
-    : score(det_score), class_id(det_class_id), delta_t_(delta_t > 0 ? delta_t : 1) {
+OCSortKalmanTracker::OCSortKalmanTracker(const cv::Rect_<float> &box, float det_score, int det_class_id, int delta_t,
+                                         const tracking::MaskRegion &mask)
+    : score(det_score), class_id(det_class_id), last_mask_(mask), delta_t_(delta_t > 0 ? delta_t : 1) {
     initKalmanFilter(box);
 
     rememberObservationState();
@@ -59,7 +60,12 @@ cv::Rect_<float> OCSortKalmanTracker::predict() {
 }
 
 void OCSortKalmanTracker::markMissed() {
-    // Nothing to correct; predict() has already aged the track.
+    // predict() has already aged the track, so there is nothing to correct.
+    // The mask, though, has to go: it describes where the object was on the
+    // frame it was last seen, and nothing propagates it forward. Keeping it
+    // would let a stale region score zero overlap against the detection that
+    // recovers the track, blocking exactly the recovery ORU and OCR exist for.
+    last_mask_ = tracking::MaskRegion{};
 }
 
 void OCSortKalmanTracker::rememberObservationState() {
@@ -74,6 +80,11 @@ void OCSortKalmanTracker::correct(const cv::Rect_<float> &box) {
     measurement_.at<float>(3, 0) = box.height > 0.0f ? box.width / box.height : 1.0f;
 
     kf_.correct(measurement_);
+}
+
+void OCSortKalmanTracker::update(const cv::Rect_<float> &box, float det_score, const tracking::MaskRegion &mask) {
+    last_mask_ = mask;
+    update(box, det_score);
 }
 
 void OCSortKalmanTracker::update(const cv::Rect_<float> &box, float det_score) {

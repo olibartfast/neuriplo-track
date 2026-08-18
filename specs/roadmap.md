@@ -106,11 +106,13 @@ a number.
       StrongSORT would reuse the BoTSORT Re-ID path; it has no row in the
       benchmark table in `docs/Tracking_Algorithms.md`, because the Roboflow
       suite does not implement it.
-- [ ] **Let masks reach the tracker.** `MultiObjectTrackingApp::processVideo`
-      keeps only `Detection` from the task result variant, so an
-      `InstanceSegmentation` model's masks are discarded, and
-      `BaseTracker::update` has no way to carry them. A prerequisite for any
-      mask-conditioned association, McByte's or otherwise.
+- [x] **Let masks reach the tracker.** `BaseTracker` has an
+      `InstanceSegmentation` overload (default slices to `Detection`), the app
+      extracts segmentation results, and OC-SORT and C-BIoU can blend mask IoU
+      into association via `--mask_iou_weight`
+      ([2026-08-18-mask-association](2026-08-18-mask-association/requirements.md)).
+      The masks are per-frame, not propagated — this is the plumbing McByte
+      would need, not McByte.
 - [ ] **Batch and multi-stream processing.** `AppConfig::batch_size` exists and
       is parsed, but the pipeline processes one source frame-by-frame.
 - [ ] **Performance instrumentation.** Per-stage timing (detect / track / draw)

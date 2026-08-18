@@ -32,6 +32,11 @@ struct TrackConfig {
     float cbiou_b2 = 0.5f;
     int cbiou_motion_n = 5;
 
+    // Mask-conditioned association (OC-SORT, C-BIoU). 0 disables the cue and
+    // reproduces pure box-overlap association; 1 associates on masks alone.
+    // Only has an effect when the detector is a segmentation model.
+    float mask_iou_weight = 0.0f;
+
     // BoTSORT parameters
     std::string tracker_config_path;
     std::string gmc_config_path;

@@ -15,6 +15,7 @@
 //         last observations of the tracks that stayed unmatched.
 //
 #pragma once
+#include "MaskOverlap.hpp"
 #include "OCSortKalmanTracker.hpp"
 
 #include <memory>
@@ -27,6 +28,7 @@ struct DetectionBox {
     cv::Rect_<float> box;
     float score{};
     int class_id{};
+    tracking::MaskRegion mask; // empty unless the detector is a segmentation model
 };
 
 struct TrackBox {
@@ -39,7 +41,7 @@ struct TrackBox {
 class OCSort {
   public:
     OCSort(int max_age = 30, int min_hits = 3, float iou_threshold = 0.3f, int delta_t = 3, float inertia = 0.2f,
-           float det_thresh = 0.6f);
+           float det_thresh = 0.6f, float mask_iou_weight = 0.0f);
 
     std::vector<TrackBox> update(const std::vector<DetectionBox> &detections);
 
@@ -59,6 +61,7 @@ class OCSort {
     int delta_t_;
     float inertia_;
     float det_thresh_;
+    float mask_iou_weight_;
     int frame_count_{};
 
     std::vector<std::unique_ptr<OCSortKalmanTracker>> trackers_;

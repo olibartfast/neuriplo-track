@@ -8,6 +8,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Generate compile_commands.json to make it easier to work with clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# `trackers` is a SHARED library that links the fetched neuriplo-tasks static
+# library, so every fetched target has to be compiled position independent.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 set(NEURIPLO_TRACK_WARNING_FLAGS)
 if(MSVC)
     list(APPEND NEURIPLO_TRACK_WARNING_FLAGS /W4)
