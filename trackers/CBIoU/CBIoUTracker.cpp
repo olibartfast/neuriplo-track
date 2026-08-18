@@ -104,6 +104,11 @@ void CBIoUTrack::markMissed() {
         hit_streak = 0;
     }
     time_since_update += 1;
+
+    // The predicted box moves on while the mask cannot: it is a per-frame
+    // observation, never propagated. Drop it so the cascade falls back to
+    // buffered box overlap until a new observation supplies a fresh one.
+    last_mask_ = tracking::MaskRegion{};
 }
 
 CBIoUTracker::CBIoUTracker(int max_age, int min_hits, float iou_threshold, float b1, float b2, int motion_n,
@@ -201,8 +206,7 @@ std::vector<TrackBox> CBIoUTracker::update(const std::vector<DetectionBox> &dete
 
     for (size_t j = 0; j < dets.size(); ++j) {
         if (!detection_matched[j]) {
-            tracks_.emplace_back(dets[j].box, dets[j].score, dets[j].class_id, motion_n_, frame_count_,
-                                 dets[j].mask);
+            tracks_.emplace_back(dets[j].box, dets[j].score, dets[j].class_id, motion_n_, frame_count_, dets[j].mask);
         }
     }
 

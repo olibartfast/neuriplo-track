@@ -378,6 +378,51 @@ void testMaskCueDecides() {
     }
 }
 
+// A segmented object that disappears for a few frames and comes back. A mask
+// describes one frame and is never propagated, so the pre-gap mask sits at the
+// old position and overlaps nothing. If it is still consulted on recovery it
+// vetoes the box match and the identity is lost, meaning that switching the cue
+// on would break the occlusion recovery these trackers exist for.
+void testMaskDoesNotBlockRecovery() {
+    constexpr int kGapStart = 8;
+    constexpr int kGapFrames = 5;
+
+    for (const auto &entry : allTrackers()) {
+        if (!entry.recovers_after_gap) {
+            continue;
+        }
+
+        TrackConfig config = baseConfig(30);
+        config.mask_iou_weight = 1.0f; // the cue at full strength
+        auto tracker = entry.factory(config);
+
+        int id_before = -1;
+        std::set<int> ids_after;
+        for (int frame = 0; frame < 24; ++frame) {
+            std::vector<neuriplo_tasks::InstanceSegmentation> segmentations;
+            const bool occluded = frame >= kGapStart && frame < kGapStart + kGapFrames;
+            if (!occluded) {
+                const cv::Rect box(20 + 8 * frame, 100, 60, 60);
+                segmentations.push_back(makeSegmentation(box, box, 0.9f, 0));
+            }
+
+            const std::vector<TrackedObject> tracks = tracker->update(segmentations);
+            if (frame == kGapStart - 1 && tracks.size() == 1) {
+                id_before = tracks.front().track_id;
+            }
+            if (frame >= kGapStart + kGapFrames + 3) {
+                for (const auto &track : tracks) {
+                    ids_after.insert(track.track_id);
+                }
+            }
+        }
+
+        CHECK_LABELED(id_before > 0, entry.name);
+        CHECK_LABELED(ids_after.size() == 1, entry.name);
+        CHECK_LABELED(!ids_after.empty() && *ids_after.begin() == id_before, entry.name);
+    }
+}
+
 // A stream where only some detections carry masks must still track the rest.
 void testPartialMasks() {
     for (const auto &entry : allTrackers()) {
@@ -514,6 +559,7 @@ int main() {
     testRecoveryAfterLongGapIsStable();
     testSlicingIsTransparent();
     testMaskCueDecides();
+    testMaskDoesNotBlockRecovery();
     testPartialMasks();
     return test_util::summary("trackers");
 }

@@ -127,6 +127,20 @@ must be made harder rather than the assertion relaxed.
   as the synthetic ones — which is a tuning question for `--mask_iou_weight`, not
   a correctness one.
 
+### Post-review changes (2026-08-18)
+
+Qodo raised three findings on the PR. All were checked against the code.
+
+| Finding | Verdict | Evidence |
+|---------|---------|----------|
+| Stale masks are reused after a missed frame | **Confirmed, fixed** | Reproduced before changing anything: a segmented object moving 8px/frame across a 5-frame gap kept its identity at `w = 0` and **lost** it at `w = 1`, for both trackers. The cue was actively breaking occlusion recovery. Masks are now dropped on a missed frame; `testMaskDoesNotBlockRecovery` fails without that change. |
+| Mixed `Detection` / `InstanceSegmentation` results are dropped | **Correct in principle, unreachable today** | Every task emits one result type — `InstanceSegmentationTask` only ever pushes `InstanceSegmentation`, so no frame can currently mix them. Hardened anyway: plain detections are carried as mask-less entries. |
+| Overload ambiguity for empty initializer lists (raised as an alternative design) | **Acknowledged, kept** | The unified-observation-type alternative would change every wrapper and caller; the overload plus slicing default keeps existing trackers untouched. The `update({})` cost is recorded in requirements.md decision 1. |
+
+This gap was mine to have caught: the occlusion tests all ran at `w = 0` and the
+mask tests contained no gaps, so nothing in the suite crossed "cue on" with
+"detection missing". That intersection is now covered.
+
 ### Deviations from the specification
 
 None. The two additions to the spec during implementation (the PIC decision and
