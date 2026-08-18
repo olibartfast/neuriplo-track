@@ -7,6 +7,17 @@ set(SORT_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/SORT/Hungarian.cpp
 )
 
+# Set source files for OC-SORT
+set(OCSORT_SOURCES
+    ${CMAKE_CURRENT_LIST_DIR}/OCSORT/OCSort.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/OCSORT/OCSortKalmanTracker.cpp
+)
+
+# Set source files for C-BIoU
+set(CBIOU_SOURCES
+    ${CMAKE_CURRENT_LIST_DIR}/CBIoU/CBIoUTracker.cpp
+)
+
 # Set source files for BoTSORT
 file(GLOB_RECURSE BOTSORT_SOURCES "${CMAKE_CURRENT_LIST_DIR}/BoTSORT/src/*.cpp")
 
@@ -15,16 +26,22 @@ set(WRAPPER_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/SortWrapper.cpp
     ${CMAKE_CURRENT_LIST_DIR}/BoTSORTWrapper.cpp
     ${CMAKE_CURRENT_LIST_DIR}/ByteTrackWrapper.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/OCSortWrapper.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/CBIoUWrapper.cpp
 )
 
 # Create the trackers library
-add_library(trackers SHARED 
+add_library(trackers SHARED
     ${SORT_SOURCES}
+    ${OCSORT_SOURCES}
+    ${CBIOU_SOURCES}
     ${BOTSORT_SOURCES}
     ${WRAPPER_SOURCES}
 )
 set_source_files_properties(
     ${SORT_SOURCES}
+    ${OCSORT_SOURCES}
+    ${CBIOU_SOURCES}
     ${WRAPPER_SOURCES}
     PROPERTIES COMPILE_OPTIONS "${NEURIPLO_TRACK_WARNING_FLAGS}"
 )
@@ -40,6 +57,8 @@ endif()
 target_include_directories(trackers PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/../include
     ${CMAKE_CURRENT_LIST_DIR}/SORT
+    ${CMAKE_CURRENT_LIST_DIR}/OCSORT
+    ${CMAKE_CURRENT_LIST_DIR}/CBIoU
     ${CMAKE_CURRENT_LIST_DIR}/BoTSORT/include
     ${bytetrack_SOURCE_DIR}/include
     ${OpenCV_INCLUDE_DIRS}
