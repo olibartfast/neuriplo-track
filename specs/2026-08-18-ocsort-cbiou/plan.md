@@ -1,5 +1,11 @@
 # Feature Plan — OC-SORT and C-BIoU trackers
 
+> **Historical record.** Written before the work, delivered in PR #3, and not
+> maintained afterwards. For what is true today see the constitution in
+> [../mission.md](../mission.md), [../tech-stack.md](../tech-stack.md) and
+> [../roadmap.md](../roadmap.md), or [specs/README.md](../README.md) for how
+> these documents relate.
+
 Task groups run in dependency order; each ends in something observable. Commit
 per group.
 
