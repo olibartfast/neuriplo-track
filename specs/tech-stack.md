@@ -33,7 +33,7 @@ read from `versions.env` by `cmake/versions.cmake`.
 
 | Dependency | Pin | Role |
 |------------|-----|------|
-| [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks) | `v0.6.0` | CV task layer and shared types (`Detection`, `TaskFactory`) |
+| [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks) | `v0.8.0` | CV task layer and shared types (`Detection`, `TaskFactory`) |
 | [neuriplo](https://github.com/olibartfast/neuriplo) | `master` | Unified inference interface across backends |
 | [ByteTrack-cpp](https://github.com/Vertical-Beach/ByteTrack-cpp) | `main` | ByteTrack implementation |
 
