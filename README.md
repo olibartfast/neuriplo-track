@@ -3,11 +3,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/std/the-standard)
 
-C++ framework for multi-object tracking, integrating state-of-the-art tracking algorithms (SORT, ByteTrack, BoTSORT) with the [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks) and [neuriplo](https://github.com/olibartfast/neuriplo) libraries for real-time object detection and tracking.
+C++ framework for multi-object tracking, integrating state-of-the-art tracking algorithms (SORT, ByteTrack, BoTSORT, OC-SORT, C-BIoU) with the [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks) and [neuriplo](https://github.com/olibartfast/neuriplo) libraries for real-time object detection and tracking.
 
 ## Key Features
 
-- **Multiple Tracking Algorithms**: SORT, ByteTrack, and BoTSORT
+- **Multiple Tracking Algorithms**: SORT, ByteTrack, BoTSORT, OC-SORT, and C-BIoU
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, LibTorch, OpenVINO (via [neuriplo](https://github.com/olibartfast/neuriplo))
 - **Multiple Detection Models**: YOLO series (v4->26), RT-DETR, D-FINE, and more
 - **Modular Architecture**: Trackers library can be built independently
@@ -93,7 +93,7 @@ See [neuriplo documentation](https://github.com/olibartfast/neuriplo) for backen
 - `--source`: Input video file or stream URL
 - `--labels`: Path to class labels file
 - `--weights`: Path to model weights
-- `--tracker`: Tracking algorithm (SORT, ByteTrack, BoTSORT)
+- `--tracker`: Tracking algorithm (`SORT`, `ByteTrack`, `BoTSORT`, `OCSORT`, `CBIoU`; the paper spellings `OC-SORT` and `C-BIoU` are accepted too)
 - `--classes`: Comma-separated list of classes to track (e.g., "person,car")
 
 #### Optional Parameters
@@ -111,6 +111,27 @@ See [neuriplo documentation](https://github.com/olibartfast/neuriplo) for backen
   - If the model has fixed channels (e.g., YOLO `1,3,-1,-1`), pass `H,W` (such as `640,640`).
   - If all dims are dynamic (e.g., `1,-1,-1,-1`), use `C,H,W` (such as `3,640,640`).
   - See `.vscode/launch.json` for concrete examples.
+
+#### Tracker Tuning Parameters
+
+Every parameter below is optional; leaving one out selects the default of the
+tracker named by `--tracker`.
+
+| Flag | Applies to | Default | Meaning |
+|------|------------|---------|---------|
+| `--max_age` | SORT, OCSORT, CBIoU | 1 (SORT), 30 (OCSORT/CBIoU) | Frames a track survives without a matching detection |
+| `--min_hits` | SORT, OCSORT, CBIoU | 3 | Detections before a track is reported |
+| `--iou_threshold` | SORT, OCSORT, CBIoU | 0.3 | Minimum overlap for an association |
+| `--track_buffer` | ByteTrack | 30 | Frames a lost track is buffered |
+| `--track_thresh` | ByteTrack | 0.5 | High/low detection split |
+| `--high_thresh` | ByteTrack | 0.6 | Score required to start a track |
+| `--match_thresh` | ByteTrack | 0.8 | Association threshold |
+| `--delta_t` | OCSORT | 3 | Frame gap used to estimate direction of travel (OCM) |
+| `--inertia` | OCSORT | 0.2 | Weight of the direction-consistency term |
+| `--det_thresh` | OCSORT | 0.6 | Minimum detection score OC-SORT will track; note this gates *after* `--min_confidence` |
+| `--biou_b1` | CBIoU | 0.3 | Buffer scale for the first matching round |
+| `--biou_b2` | CBIoU | 0.5 | Buffer scale for the second round |
+| `--motion_n` | CBIoU | 5 | Observations averaged by the motion model |
 
 ### Examples
 
@@ -152,10 +173,46 @@ See [neuriplo documentation](https://github.com/olibartfast/neuriplo) for backen
   --use-gpu
 ```
 
+#### OC-SORT for objects that get occluded
+```bash
+./neuriplo-track \
+  --type=yolo \
+  --source=video.mp4 \
+  --labels=coco.names \
+  --weights=yolov8n.onnx \
+  --tracker=OCSORT \
+  --classes=person \
+  --max_age=45 \
+  --inertia=0.3
+```
+
+#### C-BIoU for fast or irregular motion
+```bash
+./neuriplo-track \
+  --type=yolo \
+  --source=video.mp4 \
+  --labels=coco.names \
+  --weights=yolov8n.onnx \
+  --tracker=CBIoU \
+  --classes=person,sports\ ball \
+  --biou_b1=0.4 \
+  --biou_b2=0.7
+```
+
 ### Help
 ```bash
 ./neuriplo-track --help
 ```
+
+## Testing
+
+```bash
+ctest --test-dir build --output-on-failure
+```
+
+The suite drives every tracker with scripted detection sequences, so it needs no
+model weights and no video. Pass `-DNEURIPLO_TRACK_BUILD_TESTS=OFF` to skip
+building it.
 
 ## Docker Deployment
 
@@ -193,8 +250,11 @@ neuriplo-track/
 │   ├── SORT/                # SORT implementation
 │   ├── ByteTrack/           # ByteTrack (fetched)
 │   ├── BoTSORT/             # BoTSORT implementation
+│   ├── OCSORT/              # OC-SORT implementation
+│   ├── CBIoU/               # C-BIoU implementation
 │   ├── *Wrapper.cpp/hpp     # Tracker wrappers
 │   └── CMakeLists.txt
+├── tests/                    # ctest suite (no model or video required)
 ├── include/                  # Common headers
 │   ├── BaseTracker.hpp
 │   ├── TrackedObject.hpp
@@ -225,6 +285,8 @@ neuriplo-track/
 - [SORT](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tracking/cpp_inference/yoloSort) - Simple Online and Realtime Tracking
 - [ByteTrack](https://github.com/Vertical-Beach/ByteTrack-cpp) - ByteTrack C++ implementation
 - [BoTSORT](https://github.com/viplix3/BoTSORT-cpp) - BoTSORT C++ implementation
+- [OC-SORT](https://arxiv.org/abs/2203.14360) - Observation-Centric SORT (implemented in-tree from the paper)
+- [C-BIoU](https://arxiv.org/abs/2211.14317) - Cascaded Buffered IoU (implemented in-tree from the paper)
 
 ## Support
 

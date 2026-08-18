@@ -13,12 +13,26 @@ const std::string CommandLineParser::params =
     "{ source        |        | input video file or stream URL }"
     "{ labels        |        | path to class labels file }"
     "{ weights       |        | path to model weights }"
-    "{ tracker       | SORT   | tracking algorithm (SORT, ByteTrack, BoTSORT) }"
+    "{ tracker       | SORT   | tracking algorithm (SORT, ByteTrack, BoTSORT, OCSORT, CBIoU) }"
     "{ classes       |        | comma-separated list of classes to track }"
     "{ tracker_config| trackers/BoTSORT/config/tracker.ini | path to tracker config file }"
     "{ gmc_config    | trackers/BoTSORT/config/gmc.ini     | path to gmc config file }"
     "{ reid_config   | trackers/BoTSORT/config/reid.ini    | path to reid config file }"
     "{ reid_onnx     |        | path to reid onnx file }"
+    // Tracker tuning; unset values fall back to the per-algorithm defaults
+    "{ max_age       |        | frames a lost track survives (SORT 1, OCSORT/CBIoU 30) }"
+    "{ min_hits      |        | detections before a track is reported (default 3) }"
+    "{ iou_threshold |        | IoU association threshold (default 0.3) }"
+    "{ track_buffer  |        | ByteTrack: lost-track buffer length (default 30) }"
+    "{ track_thresh  |        | ByteTrack: first-stage detection threshold (default 0.5) }"
+    "{ high_thresh   |        | ByteTrack: new-track detection threshold (default 0.6) }"
+    "{ match_thresh  |        | ByteTrack: association threshold (default 0.8) }"
+    "{ delta_t       |        | OCSORT: frame gap for velocity direction (default 3) }"
+    "{ inertia       |        | OCSORT: weight of the direction-consistency cost (default 0.2) }"
+    "{ det_thresh    |        | OCSORT: minimum detection score for a track (default 0.6) }"
+    "{ biou_b1       |        | CBIoU: buffer scale, first matching round (default 0.3) }"
+    "{ biou_b2       |        | CBIoU: buffer scale, second matching round (default 0.5) }"
+    "{ motion_n      |        | CBIoU: observations averaged by the motion model (default 5) }"
     "{ use-gpu       | false  | enable GPU support }"
     "{ min_confidence| 0.25   | minimum confidence threshold }"
     "{ batch         | 1      | batch size for inference }"
@@ -58,6 +72,15 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
     config.reidConfigPath = parser.get<std::string>("reid_config");
     config.reidOnnxPath = parser.has("reid_onnx") ? parser.get<std::string>("reid_onnx") : "";
 
+    // Tracker tuning parameters: only record what the user actually passed, so
+    // makeTrackConfig() can tell "unset" from "set to the default value".
+    parseTrackerOverrides(parser, config.trackerOverrides);
+
+    if (const auto problem = validateTrackerOverrides(config.trackerOverrides)) {
+        LOG(ERROR) << *problem;
+        std::exit(1);
+    }
+
     // Detection/inference settings
     config.use_gpu = parser.get<bool>("use-gpu");
     config.confidenceThreshold = parser.get<float>("min_confidence");
@@ -81,13 +104,47 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
     return config;
 }
 
+void CommandLineParser::parseTrackerOverrides(const cv::CommandLineParser &parser, TrackerOverrides &overrides) {
+    const auto readInt = [&parser](const char *key, std::optional<int> &target) {
+        if (parser.has(key)) {
+            target = parser.get<int>(key);
+        }
+    };
+    const auto readFloat = [&parser](const char *key, std::optional<float> &target) {
+        if (parser.has(key)) {
+            target = parser.get<float>(key);
+        }
+    };
+
+    readInt("max_age", overrides.max_age);
+    readInt("min_hits", overrides.min_hits);
+    readFloat("iou_threshold", overrides.iou_threshold);
+
+    readInt("track_buffer", overrides.track_buffer);
+    readFloat("track_thresh", overrides.track_thresh);
+    readFloat("high_thresh", overrides.high_thresh);
+    readFloat("match_thresh", overrides.match_thresh);
+
+    readInt("delta_t", overrides.ocsort_delta_t);
+    readFloat("inertia", overrides.ocsort_inertia);
+    readFloat("det_thresh", overrides.ocsort_det_thresh);
+
+    readFloat("biou_b1", overrides.cbiou_b1);
+    readFloat("biou_b2", overrides.cbiou_b2);
+    readInt("motion_n", overrides.cbiou_motion_n);
+}
+
 void CommandLineParser::printHelpMessage(const cv::CommandLineParser &parser) {
     std::cout << "\nMulti-Object Tracking Application\n" << std::endl;
     std::cout << "Usage: neuriplo-track [options]\n" << std::endl;
     parser.printMessage();
     std::cout << "\nExamples:\n";
     std::cout << "  ./neuriplo-track --source=video.mp4 --type=yolov8 --weights=model.onnx \\\n";
-    std::cout << "    --labels=coco.names --tracker=ByteTrack --classes=person,car\n" << std::endl;
+    std::cout << "    --labels=coco.names --tracker=ByteTrack --classes=person,car\n";
+    std::cout << "  ./neuriplo-track --source=video.mp4 --type=yolov8 --weights=model.onnx \\\n";
+    std::cout << "    --labels=coco.names --tracker=OCSORT --classes=person --max_age=45 --inertia=0.3\n";
+    std::cout << "\nTrackers: SORT, ByteTrack, BoTSORT, OCSORT (or OC-SORT), CBIoU (or C-BIoU).\n";
+    std::cout << "Tracker tuning flags left unset take the selected algorithm's default.\n" << std::endl;
 }
 
 void CommandLineParser::validateArguments(const cv::CommandLineParser &parser) {

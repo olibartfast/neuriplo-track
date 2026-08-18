@@ -32,12 +32,13 @@ Three boundaries, each of which can be swapped independently:
 |----------|-----------|-----------------------|
 | Detection | `neuriplo_tasks::TaskFactory` | Model family and its pre/post-processing |
 | Inference | `neuriplo`, selected by `DEFAULT_BACKEND` | OpenCV DNN, ONNX Runtime, TensorRT, LibTorch, OpenVINO, LibTensorFlow |
-| Tracking | `BaseTracker` + per-algorithm wrappers | SORT, ByteTrack, BoTSORT |
+| Tracking | `BaseTracker` + per-algorithm wrappers | SORT, ByteTrack, BoTSORT, OC-SORT, C-BIoU |
 
 The application (`MultiObjectTrackingApp`) only knows about
 `neuriplo_tasks::Detection` in, `TrackedObject` out. Adding a tracker means
-adding a wrapper and one branch in `createTracker` — no changes to the detection
-or inference path.
+adding a wrapper, one branch in `createTracker`, and one entry in
+`trackers/CMakeLists.txt` (the five-step procedure in `AGENTS.md`) — no changes
+to the detection or inference path.
 
 The tracker layer builds standalone (`BUILD_ONLY_LIB=ON`), so it can be embedded
 in another application without pulling in the CLI or a detection backend.

@@ -2,7 +2,9 @@
 
 #include "BoTSORTWrapper.hpp"
 #include "ByteTrackWrapper.hpp"
+#include "CBIoUWrapper.hpp"
 #include "CommandLineParser.hpp"
+#include "OCSortWrapper.hpp"
 #include "SortWrapper.hpp"
 #include "neuriplo/tasks/core/opencv_interop.hpp"
 #include "neuriplo/tasks/core/task_config.hpp"
@@ -61,8 +63,7 @@ MultiObjectTrackingApp::MultiObjectTrackingApp(const AppConfig &config) : config
         }
 
         // Setup tracker
-        TrackConfig trackConfig(config_.classesToTrackIds, config_.trackerConfigPath, config_.gmcConfigPath,
-                                config_.reidConfigPath, config_.reidOnnxPath);
+        const TrackConfig trackConfig = makeTrackConfig(config_);
 
         tracker_ = createTracker(config_.trackingAlgorithm, trackConfig);
         if (!tracker_) {
@@ -204,12 +205,18 @@ void MultiObjectTrackingApp::drawTracks(cv::Mat &frame, const std::vector<Tracke
 std::unique_ptr<BaseTracker> MultiObjectTrackingApp::createTracker(const std::string &trackingAlgorithm,
                                                                    const TrackConfig &config) {
 
-    if (trackingAlgorithm == "BoTSORT") {
+    const std::string algorithm = canonicalTrackerName(trackingAlgorithm);
+
+    if (algorithm == "BoTSORT") {
         return std::make_unique<BoTSORTWrapper>(config);
-    } else if (trackingAlgorithm == "SORT") {
+    } else if (algorithm == "SORT") {
         return std::make_unique<SortWrapper>(config);
-    } else if (trackingAlgorithm == "ByteTrack") {
+    } else if (algorithm == "ByteTrack") {
         return std::make_unique<ByteTrackWrapper>(config);
+    } else if (algorithm == "OCSORT") {
+        return std::make_unique<OCSortWrapper>(config);
+    } else if (algorithm == "CBIoU") {
+        return std::make_unique<CBIoUWrapper>(config);
     }
 
     return nullptr;
