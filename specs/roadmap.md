@@ -1,5 +1,8 @@
 # Roadmap
 
+Part of the constitution; see [README.md](README.md) for how these
+documents fit together.
+
 Status as of 2026-08-18. Phase 0 records what already exists; later phases are
 ordered by what unblocks the most downstream work, not by size.
 
