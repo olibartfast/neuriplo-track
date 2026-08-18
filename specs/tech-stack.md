@@ -65,11 +65,15 @@ ONNX Runtime headers/libs are validated at configure time; the CUDA provider
 |---------|----------|-------|
 | SORT | `trackers/SORT/` | Kalman tracker + Hungarian assignment, in-tree |
 | BoTSORT | `trackers/BoTSORT/` | In-tree; Kalman (const-velocity and acceleration-based), `lapjv` matching, global motion compensation, ONNX Re-ID |
+| OC-SORT | `trackers/OCSORT/` | In-tree, from [arXiv 2203.14360](https://arxiv.org/abs/2203.14360); observation-centric re-update, momentum-weighted association, last-observation recovery. Reuses `HungarianAlgorithm` and `cv::KalmanFilter` |
+| C-BIoU | `trackers/CBIoU/` | In-tree, from [arXiv 2211.14317](https://arxiv.org/abs/2211.14317); buffered IoU, two-round cascaded matching, mean-displacement motion model (no Kalman filter) |
 | ByteTrack | fetched | Adapted through `ByteTrackWrapper` |
 
 BoTSORT is configured through INI files in `trackers/BoTSORT/config/`:
 `tracker.ini`, `gmc.ini`, `reid.ini`. It is the only tracker that requires the
-frame (for Re-ID feature extraction).
+frame (for Re-ID feature extraction). Every other tracker is configured entirely
+from CLI flags resolved by `makeTrackConfig` (`app/src/utils.cpp`), which applies
+per-algorithm defaults before applying command-line overrides.
 
 ## Build Targets & Options
 
@@ -93,7 +97,8 @@ trackers/      SORT/, BoTSORT/, *Wrapper.cpp
 include/       BaseTracker, TrackConfig, TrackedObject, wrapper headers
 cmake/         versions.cmake, DependencyValidation.cmake
 docs/          Architecture, algorithms, build, MOT guide, e2e test
-specs/         Product specs (this folder)
+specs/         Product specs (this folder) and dated feature packets
+tests/         ctest suite: trackers, track_config, utils
 scripts/       setup_dependencies.sh, mot_docker_cpu.sh
 ```
 
@@ -111,6 +116,7 @@ scripts/       setup_dependencies.sh, mot_docker_cpu.sh
 
 | Concern | Tool | Config |
 |---------|------|--------|
+| Tests | ctest + plain assertions (no framework) | `tests/CMakeLists.txt`, `tests/test_util.hpp` |
 | Formatting | clang-format | `.clang-format` |
 | Static analysis | clang-tidy | `.clang-tidy` |
 | Pre-commit | pre-commit | `.pre-commit-config.yaml` |
@@ -135,12 +141,17 @@ Details in [`DOCKER.md`](../DOCKER.md).
 ```bash
 ./neuriplo-track \
   --type=<model_type> --source=<video|stream> --labels=<labels_file> \
-  --weights=<model> --tracker=<SORT|ByteTrack|BoTSORT> --classes=<a,b> \
+  --weights=<model> --tracker=<SORT|ByteTrack|BoTSORT|OCSORT|CBIoU> --classes=<a,b> \
   [--use-gpu] [--output=<path>] [--display]
 ```
 
 BoTSORT additionally needs `--tracker_config` and `--reid_onnx`, and usually
 `--gmc_config` / `--reid_config`.
+
+Tracker tuning flags, all optional and defaulting per algorithm: `--max_age`,
+`--min_hits`, `--iou_threshold`, `--track_buffer`, `--track_thresh`,
+`--high_thresh`, `--match_thresh`, `--delta_t`, `--inertia`, `--det_thresh`,
+`--biou_b1`, `--biou_b2`, `--motion_n`.
 
 ## License
 

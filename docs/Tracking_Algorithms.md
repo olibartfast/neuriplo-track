@@ -6,7 +6,9 @@ This document provides detailed information about the tracking algorithms implem
 1. [SORT (Simple Online and Realtime Tracking)](#sort)
 2. [BoTSORT (Bootstrapping and Track re-IDentification)](#botsort)
 3. [ByteTrack](#bytetrack)
-4. [Algorithm Comparison](#comparison)
+4. [OC-SORT (Observation-Centric SORT)](#ocsort)
+5. [C-BIoU (Cascaded Buffered IoU)](#cbiou)
+6. [Algorithm Comparison](#comparison)
 
 ## Related Documentation
 - **[Code Examples](Code_Examples.md)** - Detailed implementation code, configuration files, and integration patterns
@@ -261,18 +263,139 @@ ByteTrack's key insight is leveraging low-confidence detections typically discar
 
 ---
 
-## 4. Algorithm Comparison {#comparison}
+## 4. OC-SORT (Observation-Centric SORT) {#ocsort}
+
+**Characteristics**:
+- Motion-only: no appearance features, no Re-ID model, no extra weights
+- Built directly on the SORT state model, so it costs little over SORT
+- Designed for objects that disappear and come back
+- Implemented in-tree from the paper ([arXiv 2203.14360](https://arxiv.org/abs/2203.14360))
+
+### The problem it addresses
+
+SORT's weakness is not the association metric but what happens while a track is
+unmatched. The Kalman filter keeps integrating its own predictions, so the
+estimate drifts, and the drift is *itself* used as the reference for the next
+association. A short occlusion is therefore enough to lose an identity
+permanently, and the longer the gap the worse the estimate that has to bridge it.
+
+OC-SORT's answer is to treat observations, not filter state, as the anchor.
+
+### Key Innovations
+
+#### 1. ORU — Observation-centric Re-Update
+When a lost track is re-associated, the filter is not simply corrected with the
+new box. A virtual trajectory is interpolated between the last real observation
+and the new one, and the filter is replayed over it. The accumulated error from
+the prediction-only frames never enters the state.
+
+#### 2. OCM — Observation-centric Momentum
+Association cost combines IoU with the consistency between the track's direction
+of travel and the direction from its last observation to the candidate detection.
+The direction is measured across `delta_t` frames rather than consecutive ones,
+which makes it far less sensitive to detection noise. The term is weighted by
+`inertia` and by the detection score, so it biases the assignment without ever
+overruling IoU on its own.
+
+#### 3. OCR — Observation-centric Recovery
+A second association round matches detections still unclaimed against the *last
+observations* of tracks that stayed unmatched. This is what recovers an object
+that reappears close to where it was last actually seen.
+
+### Tracking Pipeline
+
+1. **Gate detections** by `det_thresh`; low-scoring boxes are dropped, not used
+   to keep a track alive
+2. **Predict** every track and discard states that have become unusable
+3. **Associate** with the OCM cost (Hungarian assignment), rejecting pairs below
+   `iou_threshold`
+4. **Recover** leftovers against last observations (OCR)
+5. **Update** matched tracks (with ORU when they were lost), age the rest
+6. **Create** tracks for unclaimed detections, delete tracks older than `max_age`
+
+Reported boxes are the last real observation when there is one, matching the
+paper's observation-centric output rule.
+
+### Advantages
+- **Recovers identities across occlusions** without any appearance model
+- **Cheap**: one extra Hungarian round and a direction term over SORT
+- **No extra assets**: no Re-ID ONNX file, no configuration files
+
+### Limitations
+- **Motion-only**: two similar objects that swap places while both are occluded
+  cannot be told apart
+- **`det_thresh` gates a second time**: with a low `--min_confidence` and the
+  default 0.6, weak detections are silently discarded
+- **Linear motion assumption** still underlies the Kalman prediction
+
+---
+
+## 5. C-BIoU (Cascaded Buffered IoU) {#cbiou}
+
+**Characteristics**:
+- No Kalman filter at all
+- Motion-only, appearance-free
+- Aimed at fast, irregular, non-linear motion
+- Implemented in-tree from the paper ([arXiv 2211.14317](https://arxiv.org/abs/2211.14317))
+
+### The problem it addresses
+
+A constant-velocity Kalman filter does not merely fail on erratic motion — it
+fails *confidently*, predicting a precise box in the wrong place. For sports
+footage or any target that changes direction abruptly, a coarse estimate with a
+generous matching radius beats a sharp estimate pointed the wrong way.
+
+### Key Innovations
+
+#### 1. Buffered IoU
+Both the track box and the detection box are expanded by a scale factor before
+IoU is computed. The buffer *is* the search radius: boxes that no longer overlap
+at all can still be associated, and how much slack is allowed is one number.
+
+#### 2. Cascaded matching
+Association runs twice. The first round uses the tight buffer `b1`, so confident
+pairs are settled before a wider radius can steal them; the second round retries
+whatever is left at the larger buffer `b2`. This ordering is what keeps the
+larger buffer from creating false matches in crowded scenes.
+
+#### 3. Mean-displacement motion model
+The predicted state is the last observation plus the average per-frame
+displacement over the previous `motion_n` observations, extended one step per
+missed frame. No filter, no covariance, no tuning of process noise.
+
+### Tracking Pipeline
+
+1. **Predict** each track from its observation history
+2. **Match** at buffer `b1` (Hungarian over `1 - buffered IoU`)
+3. **Match the remainder** at buffer `b2`
+4. **Update** matched tracks, age the rest
+5. **Create** tracks for unclaimed detections, delete tracks older than `max_age`
+
+### Advantages
+- **Handles irregular motion** that breaks constant-velocity predictions
+- **Simplest of the five**: no filter, no appearance model, no configuration files
+- **Two intuitive knobs**: how far to search, and how much history to average
+
+### Limitations
+- **Large buffers invite false matches** in dense scenes; `b2` is the risk knob
+- **No appearance cue**, so identical objects crossing can still swap
+- **History-based motion** needs a few observations before the model is useful
+
+---
+
+## 6. Algorithm Comparison {#comparison}
 
 ### Performance Comparison
 
-| Metric | SORT | ByteTrack | BoTSORT |
-|--------|------|-----------|---------|
-| **Speed (FPS)** | 100+ | 30-60 | 10-30 |
-| **MOTA (MOT17)** | ~45% | ~60% | ~65% |
-| **IDF1 (MOT17)** | ~40% | ~55% | ~70% |
-| **HOTA (MOT17)** | ~35% | ~50% | ~60% |
-| **Memory Usage** | Low | Medium | High |
-| **Implementation Complexity** | Low | Medium | High |
+| Metric | SORT | ByteTrack | OC-SORT | C-BIoU | BoTSORT |
+|--------|------|-----------|---------|--------|---------|
+| **Speed (FPS)** | 100+ | 30-60 | 80+ | 100+ | 10-30 |
+| **Memory Usage** | Low | Medium | Low | Low | High |
+| **Implementation Complexity** | Low | Medium | Medium | Low | High |
+| **Extra assets required** | None | None | None | None | Re-ID ONNX + INI files |
+
+For accuracy, see the externally measured HOTA figures below rather than the
+rough MOTA/IDF1 ranges this table used to carry.
 
 ### External Benchmark Reference
 
@@ -285,9 +408,9 @@ SportsMOT, SoccerNet and DanceTrack with default parameters:
 |-----------|-----------:|---------------:|---------------:|----------------:|----------------|
 | [SORT](https://arxiv.org/abs/1602.00763) | 58.4 | 70.8 | 81.6 | 47.2 | ✅ |
 | [ByteTrack](https://arxiv.org/abs/2110.06864) | 60.1 | 73.0 | 84.0 | 53.3 | ✅ |
-| [OC-SORT](https://arxiv.org/abs/2203.14360) | 61.9 | 71.7 | 78.4 | 54.1 | ❌ |
+| [OC-SORT](https://arxiv.org/abs/2203.14360) | 61.9 | 71.7 | 78.4 | 54.1 | ✅ |
 | [BoT-SORT](https://arxiv.org/abs/2206.14651) | 63.7 | 73.8 | 84.5 | 57.8 | ✅ |
-| [C-BIoU](https://arxiv.org/abs/2211.14317) | 63.0 | 73.1 | 82.6 | 56.7 | ❌ |
+| [C-BIoU](https://arxiv.org/abs/2211.14317) | 63.0 | 73.1 | 82.6 | 56.7 | ✅ |
 | [McByte](https://arxiv.org/abs/2506.01373) | **64.1** | **76.5** | **85.0** | **67.2** | ❌ |
 
 Read these as relative ordering, not as targets for this project's C++
@@ -295,25 +418,38 @@ implementations:
 
 - **Detections differ per dataset.** MOT17, SportsMOT and DanceTrack use YOLOX
   detections; SoccerNet uses oracle ground-truth boxes, which is why its scores
-  sit 20+ HOTA above MOT17. Tracking metrics move with detector quality.
+  sit roughly 17-24 HOTA above MOT17. Tracking metrics move with detector quality.
 - **Default parameters only.** The comparison page also reports grid-searched
   configurations, where the gaps between trackers narrow considerably (on MOT17,
   tuned SORT reaches 60.4 against ByteTrack's 60.5).
-- **The McByte row has a different basis.** It is author-reported (PR #513)
+- **DanceTrack is a different split.** Its numbers are validation-set results
+  (test-set evaluation is unavailable since the CodaLab shutdown), while the
+  other three columns are test-set.
+- **The McByte row has a different basis.** It is author-reported
+  ([roboflow/trackers#513](https://github.com/roboflow/trackers/pull/513))
   against a BoT-SORT-without-Re-ID baseline rather than measured in the same
   five-tracker sweep, though that baseline matches the BoT-SORT run above.
-- **Benchmark version:** `trackers` v2.3.0 (released 2026-03-16).
+- **Source:** the `trackers` comparison page as read on 2026-08-18, which
+  corresponds to upstream release 2.6.0. (The page banner still reads v2.3.0,
+  but the BoT-SORT and C-BIoU rows only exist from 2.6.0 onward.)
+
+The ✅ column says an algorithm is available here, **not** that this C++ port
+reproduces the score next to it. These numbers come from the Roboflow Python
+implementations with their own detections; nothing in this repository has been
+evaluated on MOT17. Producing comparable numbers is
+[Phase 3](../specs/roadmap.md) work.
 
 ### Feature Comparison
 
-| Feature | SORT | ByteTrack | BoTSORT |
-|---------|------|-----------|---------|
-| **Motion Model** | Kalman Filter | Enhanced Kalman | Kalman + GMC |
-| **Appearance Model** | None | None | Deep ReID |
-| **Association Method** | IoU only | IoU hierarchical | IoU + Appearance |
-| **Occlusion Handling** | Basic | Improved | Advanced |
-| **ID Switch Robustness** | Poor | Good | Excellent |
-| **Real-time Performance** | Excellent | Good | Fair |
+| Feature | SORT | ByteTrack | OC-SORT | C-BIoU | BoTSORT |
+|---------|------|-----------|---------|--------|---------|
+| **Motion Model** | Kalman Filter | Enhanced Kalman | Kalman + observation re-update | Mean displacement (no filter) | Kalman + GMC |
+| **Appearance Model** | None | None | None | None | Deep ReID |
+| **Association Method** | IoU only | IoU hierarchical | IoU + direction (OCM), then last-observation IoU | Buffered IoU, cascaded | IoU + Appearance |
+| **Occlusion Handling** | Basic | Improved | Advanced (ORU/OCR) | Improved (buffered match) | Advanced |
+| **ID Switch Robustness** | Poor | Good | Good | Good | Excellent |
+| **Irregular Motion** | Poor | Poor | Fair | Good | Fair |
+| **Real-time Performance** | Excellent | Good | Excellent | Excellent | Fair |
 
 > **Note**: For detailed implementation code, configuration examples, and integration patterns, see the [Code Examples](Code_Examples.md) documentation.
 
@@ -332,6 +468,18 @@ implementations:
 - **Applications needing balance** between speed and accuracy
 - **When appearance features** are not available or applicable
 - **Medium-scale deployments** with standard hardware
+
+#### OC-SORT - Best for:
+- **Objects that get occluded** and reappear (crowds, foreground obstacles)
+- **Wanting BoTSORT-class recovery** without shipping a Re-ID model
+- **Pedestrian and vehicle scenes** where motion is mostly smooth
+- **Upgrading from SORT** with minimal added cost
+
+#### C-BIoU - Best for:
+- **Fast or irregular motion** that breaks constant-velocity prediction
+- **Sports and animal footage** where targets change direction abruptly
+- **Low-frame-rate input**, where objects move far between frames
+- **The simplest possible tracker** that still handles hard motion
 
 #### BoTSORT - Best for:
 - **High-accuracy requirements** where ID consistency is critical
@@ -352,6 +500,18 @@ implementations:
 - **Low Confidence** (0.1): Secondary threshold for recovery matching
 - **Match Threshold** (0.8): IoU threshold for track-detection association
 - **Track Buffer** (30): Frames to maintain lost tracks for potential recovery
+
+#### OC-SORT Configuration
+- **Max Age** (30): Frames a track survives unmatched; raise it for long occlusions
+- **Delta T** (3): Frame gap used to estimate direction; raise it when detections are jittery
+- **Inertia** (0.2): Weight of the direction term; raise it when objects move consistently
+- **Det Threshold** (0.6): Second gate on detection score, applied after `--min_confidence`
+
+#### C-BIoU Configuration
+- **Buffer b1** (0.3): First-round search radius as a fraction of box size
+- **Buffer b2** (0.5): Second-round radius; the main risk knob in crowded scenes
+- **Motion N** (5): Observations averaged by the motion model; lower reacts faster, higher is steadier
+- **Max Age** (30): Frames a track survives unmatched
 
 #### BoTSORT Configuration
 - **Detection Thresholds**: Similar to ByteTrack for hierarchical processing
@@ -375,6 +535,12 @@ implementations:
 - **Enhanced Recovery**: Better track continuity than SORT
 - **Configurable Thresholds**: Tunable for different scenarios
 
+#### Motion-Only Recovery (OC-SORT, C-BIoU)
+- **No extra assets**: no Re-ID model, no INI files; `--tracker=OCSORT` or `--tracker=CBIoU` is enough
+- **Tunable from the CLI**: every parameter is exposed as a flag
+- **Frame not required**: like SORT and ByteTrack, they ignore the image
+- **Longer default lifetime**: `max_age` defaults to 30 so a track can survive a gap
+
 #### Advanced Integration (BoTSORT)
 - **Full-featured Setup**: Requires ReID model and configuration files
 - **Frame Processing**: Needs input frames for appearance feature extraction
@@ -383,4 +549,4 @@ implementations:
 
 > **Complete Integration Examples**: See [Code Examples](Code_Examples.md) for detailed implementation patterns, multi-camera setups, and optimization techniques.
 
-This guide provides the conceptual foundation for understanding and choosing between the three main tracking algorithms. Each serves different use cases, from high-speed real-time applications to accuracy-critical scenarios requiring robust re-identification capabilities.
+This guide provides the conceptual foundation for understanding and choosing between the five tracking algorithms. Each serves different use cases, from high-speed real-time applications through occlusion- and irregular-motion-heavy scenes to accuracy-critical scenarios requiring robust re-identification capabilities.

@@ -4,7 +4,7 @@ Guidance for AI coding agents working in this repository.
 
 ## Project Overview
 
-**neuriplo-track** is a C++20 multi-object tracking framework that combines detection (via [neuriplo](https://github.com/olibartfast/neuriplo) + [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks)) with tracking algorithms SORT, ByteTrack, and BoTSORT.
+**neuriplo-track** is a C++20 multi-object tracking framework that combines detection (via [neuriplo](https://github.com/olibartfast/neuriplo) + [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks)) with tracking algorithms SORT, ByteTrack, BoTSORT, OC-SORT, and C-BIoU.
 
 ## Repository Layout
 
@@ -14,6 +14,8 @@ trackers/      Tracker implementations and wrappers
 include/       Public headers (BaseTracker, TrackConfig, TrackedObject, wrappers)
 cmake/         CMake modules (versions, dependency validation)
 docs/          Architecture and algorithm documentation
+specs/         Product specs: constitution (mission/tech-stack/roadmap) + dated feature packets
+tests/         ctest suite; scripted detections only, no model or video needed
 ```
 
 Fetched at configure time into `build/_deps/`: neuriplo-tasks, neuriplo, ByteTrack-cpp.
@@ -45,11 +47,12 @@ Optional flags: `BUILD_ONLY_LIB=ON` (trackers library only), `WERROR=ON` (strict
 ## Architecture
 
 - **BaseTracker** (`include/BaseTracker.hpp`): abstract interface; `update(detections, frame)` returns `TrackedObject` vectors.
-- **Wrappers** (`include/*Wrapper.hpp`, `trackers/*Wrapper.cpp`): adapt SORT, ByteTrack, BoTSORT to the common interface.
-- **TrackConfig** (`include/TrackConfig.hpp`): classes to track, IoU/age thresholds, BoTSORT config paths (tracker.ini, gmc.ini, reid.ini, reid ONNX).
+- **Wrappers** (`include/*Wrapper.hpp`, `trackers/*Wrapper.cpp`): adapt SORT, ByteTrack, BoTSORT, OC-SORT, and C-BIoU to the common interface.
+- **TrackConfig** (`include/TrackConfig.hpp`): classes to track, IoU/age thresholds, per-algorithm parameters (ByteTrack, OC-SORT, C-BIoU), BoTSORT config paths (tracker.ini, gmc.ini, reid.ini, reid ONNX).
+- **makeTrackConfig / canonicalTrackerName** (`app/src/utils.cpp`): resolve `AppConfig` + CLI overrides into a `TrackConfig`, applying per-algorithm defaults; `--tracker` accepts `OC-SORT`/`C-BIoU` spellings.
 - **MultiObjectTrackingApp** (`app/`): wires detector (`neuriplo_tasks::TaskFactory`), inference engine, and tracker; tracker creation lives in `MultiObjectTrackingApp::createTracker`.
 
-BoTSORT requires a frame for Re-ID features; SORT and ByteTrack do not.
+BoTSORT requires a frame for Re-ID features; SORT, ByteTrack, OC-SORT, and C-BIoU do not.
 
 ## Code Conventions
 
@@ -65,6 +68,11 @@ BoTSORT requires a frame for Re-ID features; SORT and ByteTrack do not.
 ```bash
 ctest --test-dir build --output-on-failure
 ```
+
+Three suites: `trackers` (tracker behaviour against scripted `Detection`
+sequences), `track_config` (CLI → `TrackConfig` resolution), `utils`. They need
+no weights and no video. `-DNEURIPLO_TRACK_BUILD_TESTS=OFF` skips building them.
+When adding tracker logic, add a case to `tests/test_trackers.cpp`.
 
 CI (`.github/workflows/ci.yml`): Release build with Ninja on ubuntu-24.04; separate job with `WERROR=ON`. Markdown-only changes do not trigger CI.
 
@@ -99,5 +107,9 @@ When editing `README.md` or any documentation with hyperlinks:
 1. Implement algorithm (or wrap external code) under `trackers/`.
 2. Add wrapper implementing `BaseTracker`.
 3. Register in `MultiObjectTrackingApp::createTracker` and `trackers/CMakeLists.txt`.
-4. Extend CLI help / `CommandLineParser` if new options are required.
-5. Update `docs/Tracking_Algorithms.md` and README examples if user-facing.
+4. Extend CLI help / `CommandLineParser` if new options are required, add the
+   parameters to `TrackConfig`, and give the algorithm its defaults in
+   `makeTrackConfig`.
+5. Add coverage in `tests/test_trackers.cpp`.
+6. Update `docs/Tracking_Algorithms.md`, README examples, and `specs/roadmap.md`
+   if user-facing.

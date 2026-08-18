@@ -207,6 +207,15 @@ if(NOT BUILD_ONLY_LIB)
     add_subdirectory(app)
 endif()
 
+# Test suite. Named NEURIPLO_TRACK_BUILD_TESTS because BUILD_TESTS is already
+# force-set above to keep the fetched dependencies from building their own tests.
+option(NEURIPLO_TRACK_BUILD_TESTS "Build the neuriplo-track test suite" ON)
+
+if(NEURIPLO_TRACK_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
 # Print final configuration summary
 message(STATUS "=== Build Configuration Summary ===")
 message(STATUS "Backend: ${DEFAULT_BACKEND}")

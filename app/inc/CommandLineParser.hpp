@@ -10,6 +10,7 @@ class CommandLineParser {
   private:
     static const std::string params;
     static void printHelpMessage(const cv::CommandLineParser &parser);
+    static void parseTrackerOverrides(const cv::CommandLineParser &parser, TrackerOverrides &overrides);
     static void validateArguments(const cv::CommandLineParser &parser);
     static std::set<int> mapClassesToIds(const std::vector<std::string> &classesToTrack,
                                          const std::vector<std::string> &allClasses);
