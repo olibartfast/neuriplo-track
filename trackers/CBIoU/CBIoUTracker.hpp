@@ -17,6 +17,8 @@
 // Motion is estimated as the mean displacement over the last n observations.
 //
 #pragma once
+#include "MaskOverlap.hpp"
+
 #include <deque>
 #include <opencv2/core/types.hpp>
 #include <vector>
@@ -27,6 +29,7 @@ struct DetectionBox {
     cv::Rect_<float> box;
     float score{};
     int class_id{};
+    tracking::MaskRegion mask; // empty unless the detector is a segmentation model
 };
 
 struct TrackBox {
@@ -44,16 +47,20 @@ float bufferedIoU(const cv::Rect_<float> &a, const cv::Rect_<float> &b, float sc
 
 class CBIoUTrack {
   public:
-    CBIoUTrack(const cv::Rect_<float> &box, float score, int class_id, int motion_n, int frame);
+    CBIoUTrack(const cv::Rect_<float> &box, float score, int class_id, int motion_n, int frame,
+               const tracking::MaskRegion &mask = tracking::MaskRegion{});
 
     // Mean-displacement motion model: last observation plus the average
     // per-frame displacement over the buffered observation history.
     cv::Rect_<float> predict() const;
 
-    void update(const cv::Rect_<float> &box, float score, int class_id, int frame);
+    void update(const cv::Rect_<float> &box, float score, int class_id, int frame, const tracking::MaskRegion &mask);
     void markMissed();
 
     const cv::Rect_<float> &lastObservation() const { return observations_.back().box; }
+
+    // Mask of the last observation; empty when the detector supplied none.
+    const tracking::MaskRegion &lastMask() const { return last_mask_; }
 
     int id{};
     int time_since_update{};
@@ -76,13 +83,14 @@ class CBIoUTrack {
     };
 
     std::deque<Observation> observations_;
+    tracking::MaskRegion last_mask_;
     size_t motion_n_{5};
 };
 
 class CBIoUTracker {
   public:
     CBIoUTracker(int max_age = 30, int min_hits = 3, float iou_threshold = 0.3f, float b1 = 0.3f, float b2 = 0.5f,
-                 int motion_n = 5);
+                 int motion_n = 5, float mask_iou_weight = 0.0f);
 
     std::vector<TrackBox> update(const std::vector<DetectionBox> &detections);
 
@@ -98,6 +106,7 @@ class CBIoUTracker {
     float b1_;
     float b2_;
     int motion_n_;
+    float mask_iou_weight_;
     int frame_count_{};
 
     std::vector<CBIoUTrack> tracks_;

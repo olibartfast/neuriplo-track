@@ -180,6 +180,9 @@ TrackConfig makeTrackConfig(const AppConfig &config) {
     if (overrides.cbiou_motion_n) {
         trackConfig.cbiou_motion_n = *overrides.cbiou_motion_n;
     }
+    if (overrides.mask_iou_weight) {
+        trackConfig.mask_iou_weight = *overrides.mask_iou_weight;
+    }
 
     return trackConfig;
 }

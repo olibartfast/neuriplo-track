@@ -12,7 +12,10 @@
 #include "test_util.hpp"
 
 #include <functional>
+#include <map>
 #include <memory>
+#include <neuriplo/tasks/core/opencv_interop.hpp>
+#include <opencv2/core.hpp>
 #include <set>
 #include <string>
 #include <vector>
@@ -190,7 +193,9 @@ void testDegenerateInput() {
         auto tracker = entry.factory(baseConfig(30));
 
         for (int frame = 0; frame < 5; ++frame) {
-            CHECK_LABELED(tracker->update({}).empty(), entry.name);
+            // The braced empty list is ambiguous now that update() is
+            // overloaded on the detection type, so name it.
+            CHECK_LABELED(tracker->update(std::vector<neuriplo_tasks::Detection>{}).empty(), entry.name);
         }
 
         for (int frame = 0; frame < 5; ++frame) {
@@ -224,6 +229,191 @@ void testConfidencePropagation() {
                 }
             }
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Mask-conditioned association
+// ---------------------------------------------------------------------------
+
+constexpr int kMaskFrameWidth = 240;
+constexpr int kMaskFrameHeight = 200;
+
+// A detection carrying a full-frame 0/255 mask, the way a segmentation model's
+// postprocessor reports one.
+neuriplo_tasks::InstanceSegmentation makeSegmentation(const cv::Rect &box, const cv::Rect &foreground, float confidence,
+                                                      int class_id) {
+    neuriplo_tasks::InstanceSegmentation segmentation;
+    segmentation.bbox = neuriplo_tasks::BoundingBox(box.x, box.y, box.width, box.height);
+    segmentation.class_confidence = confidence;
+    segmentation.class_id = static_cast<float>(class_id);
+
+    cv::Mat full = cv::Mat::zeros(kMaskFrameHeight, kMaskFrameWidth, CV_8U);
+    if (foreground.width > 0 && foreground.height > 0) {
+        full(foreground & cv::Rect(0, 0, kMaskFrameWidth, kMaskFrameHeight)).setTo(255);
+    }
+    segmentation.mask = neuriplo_tasks::fromCvMat(full);
+    segmentation.mask_height = kMaskFrameHeight;
+    segmentation.mask_width = kMaskFrameWidth;
+    return segmentation;
+}
+
+std::vector<neuriplo_tasks::Detection>
+sliceToDetections(const std::vector<neuriplo_tasks::InstanceSegmentation> &segmentations) {
+    std::vector<neuriplo_tasks::Detection> detections;
+    detections.reserve(segmentations.size());
+    for (const auto &segmentation : segmentations) {
+        detections.push_back(static_cast<const neuriplo_tasks::Detection &>(segmentation));
+    }
+    return detections;
+}
+
+// Track ids are handed out by a process-wide counter, so two tracker instances
+// never produce the same numbers. Comparing the order in which ids first appear
+// compares identity structure without depending on the counter.
+std::vector<int> normalizeIds(const std::vector<std::vector<TrackedObject>> &frames) {
+    std::map<int, int> assigned;
+    std::vector<int> normalized;
+    for (const auto &frame : frames) {
+        for (const auto &track : frame) {
+            const auto inserted = assigned.emplace(track.track_id, static_cast<int>(assigned.size()));
+            normalized.push_back(inserted.first->second);
+        }
+    }
+    return normalized;
+}
+
+// Feeding segmentations must behave exactly like feeding the detections inside
+// them, for every tracker, when the mask cue is off.
+void testSlicingIsTransparent() {
+    for (const auto &entry : allTrackers()) {
+        auto with_masks = entry.factory(baseConfig(30));
+        auto without_masks = entry.factory(baseConfig(30));
+
+        std::vector<std::vector<TrackedObject>> masked_frames;
+        std::vector<std::vector<TrackedObject>> plain_frames;
+
+        for (int frame = 0; frame < 16; ++frame) {
+            const cv::Rect box(20 + 5 * frame, 60, 60, 60);
+            const std::vector<neuriplo_tasks::InstanceSegmentation> segmentations = {
+                makeSegmentation(box, box, 0.9f, 0)};
+
+            masked_frames.push_back(with_masks->update(segmentations));
+            plain_frames.push_back(without_masks->update(sliceToDetections(segmentations)));
+        }
+
+        CHECK_LABELED(normalizeIds(masked_frames) == normalizeIds(plain_frames), entry.name);
+
+        for (size_t i = 0; i < masked_frames.size(); ++i) {
+            CHECK_LABELED(masked_frames[i].size() == plain_frames[i].size(), entry.name);
+            for (size_t j = 0; j < masked_frames[i].size() && j < plain_frames[i].size(); ++j) {
+                CHECK_LABELED(std::fabs(masked_frames[i][j].x - plain_frames[i][j].x) < 1e-5f, entry.name);
+                CHECK_LABELED(std::fabs(masked_frames[i][j].height - plain_frames[i][j].height) < 1e-5f, entry.name);
+            }
+        }
+    }
+}
+
+// A constructed worst case for box-only association: two objects whose boxes sit
+// almost on top of each other and swap places every frame, while their masks
+// occupy different horizontal bands and never touch. Box overlap prefers the
+// wrong pairing; mask overlap prefers the right one. The two objects have
+// different heights so identity is visible in the output.
+//
+// Returns whether the tall object kept one identity for the whole sequence.
+bool runMaskSwapSequence(const NamedTracker &entry, float mask_iou_weight) {
+    TrackConfig config = baseConfig(30);
+    config.mask_iou_weight = mask_iou_weight;
+    auto tracker = entry.factory(config);
+
+    int tall_id_first = -1;
+    int tall_id_last = -1;
+
+    for (int frame = 0; frame < 14; ++frame) {
+        const bool swapped = (frame % 2) == 1;
+        // 30px apart: the right pairing scores 0.33 box IoU, the wrong one
+        // (same position, different height) scores 0.67, so box evidence points
+        // the wrong way by more than OC-SORT's momentum term can correct.
+        const int tall_x = swapped ? 130 : 100;
+        const int short_x = swapped ? 100 : 130;
+
+        // Tall object: 60x60 box, mask in the upper band.
+        const cv::Rect tall_box(tall_x, 100, 60, 60);
+        const cv::Rect tall_mask(tall_x, 100, 60, 20);
+        // Short object: 60x40 box, mask in the lower band; the bands never overlap.
+        const cv::Rect short_box(short_x, 100, 60, 40);
+        const cv::Rect short_mask(short_x, 120, 60, 20);
+
+        const std::vector<neuriplo_tasks::InstanceSegmentation> segmentations = {
+            makeSegmentation(tall_box, tall_mask, 0.9f, 0), makeSegmentation(short_box, short_mask, 0.9f, 0)};
+
+        const std::vector<TrackedObject> tracks = tracker->update(segmentations);
+
+        for (const auto &track : tracks) {
+            if (std::fabs(track.height - 60.0f) < 1e-3f) {
+                if (tall_id_first < 0) {
+                    tall_id_first = track.track_id;
+                }
+                tall_id_last = track.track_id;
+            }
+        }
+    }
+
+    return tall_id_first > 0 && tall_id_first == tall_id_last;
+}
+
+void testMaskCueDecides() {
+    for (const auto &entry : allTrackers()) {
+        if (!entry.recovers_after_gap) {
+            continue; // the cue is implemented for OC-SORT and C-BIoU
+        }
+
+        // With masks the tall object keeps its identity...
+        CHECK_LABELED(runMaskSwapSequence(entry, 1.0f), entry.name);
+
+        // ...and without them it does not. This second assertion pins the case
+        // as one the masks actually decide: if box-only association ever solves
+        // it, the sequence must be made harder rather than this relaxed.
+        CHECK_LABELED(!runMaskSwapSequence(entry, 0.0f), entry.name);
+    }
+}
+
+// A stream where only some detections carry masks must still track the rest.
+void testPartialMasks() {
+    for (const auto &entry : allTrackers()) {
+        if (!entry.recovers_after_gap) {
+            continue;
+        }
+
+        TrackConfig config = baseConfig(30);
+        config.mask_iou_weight = 1.0f;
+        auto tracker = entry.factory(config);
+
+        std::set<int> ids;
+        for (int frame = 0; frame < 14; ++frame) {
+            const cv::Rect masked_box(20 + 5 * frame, 40, 50, 50);
+            const cv::Rect bare_box(150, 120, 50, 50);
+
+            std::vector<neuriplo_tasks::InstanceSegmentation> segmentations = {
+                makeSegmentation(masked_box, masked_box, 0.9f, 0)};
+
+            // Second object reports a box but no mask at all.
+            neuriplo_tasks::InstanceSegmentation bare;
+            bare.bbox = neuriplo_tasks::BoundingBox(bare_box.x, bare_box.y, bare_box.width, bare_box.height);
+            bare.class_confidence = 0.9f;
+            bare.class_id = 0.0f;
+            segmentations.push_back(bare);
+
+            const std::vector<TrackedObject> tracks = tracker->update(segmentations);
+            if (frame >= 6) {
+                CHECK_LABELED(tracks.size() == 2, entry.name);
+                for (const auto &track : tracks) {
+                    ids.insert(track.track_id);
+                }
+            }
+        }
+
+        CHECK_LABELED(ids.size() == 2, entry.name);
     }
 }
 
@@ -322,5 +512,8 @@ int main() {
     testConfidencePropagation();
     testConfidenceDoesNotPenalise();
     testRecoveryAfterLongGapIsStable();
+    testSlicingIsTransparent();
+    testMaskCueDecides();
+    testPartialMasks();
     return test_util::summary("trackers");
 }

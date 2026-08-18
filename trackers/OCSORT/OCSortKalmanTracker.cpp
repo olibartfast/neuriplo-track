@@ -11,8 +11,9 @@ int OCSortKalmanTracker::id_counter_ = 0;
 
 void OCSortKalmanTracker::resetIdCounter() { id_counter_ = 0; }
 
-OCSortKalmanTracker::OCSortKalmanTracker(const cv::Rect_<float> &box, float det_score, int det_class_id, int delta_t)
-    : score(det_score), class_id(det_class_id), delta_t_(delta_t > 0 ? delta_t : 1) {
+OCSortKalmanTracker::OCSortKalmanTracker(const cv::Rect_<float> &box, float det_score, int det_class_id, int delta_t,
+                                         const tracking::MaskRegion &mask)
+    : score(det_score), class_id(det_class_id), last_mask_(mask), delta_t_(delta_t > 0 ? delta_t : 1) {
     initKalmanFilter(box);
 
     rememberObservationState();
@@ -74,6 +75,11 @@ void OCSortKalmanTracker::correct(const cv::Rect_<float> &box) {
     measurement_.at<float>(3, 0) = box.height > 0.0f ? box.width / box.height : 1.0f;
 
     kf_.correct(measurement_);
+}
+
+void OCSortKalmanTracker::update(const cv::Rect_<float> &box, float det_score, const tracking::MaskRegion &mask) {
+    last_mask_ = mask;
+    update(box, det_score);
 }
 
 void OCSortKalmanTracker::update(const cv::Rect_<float> &box, float det_score) {

@@ -10,6 +10,7 @@
 | Generator (CI) | Ninja | `.github/workflows/ci.yml` |
 | Warnings | `-Wall -Wextra -Wpedantic` (`/W4` on MSVC); `WERROR=ON` adds `-Werror` / `/WX` | `CMakeLists.txt` |
 | Compile DB | `CMAKE_EXPORT_COMPILE_COMMANDS ON` (clangd) | `CMakeLists.txt` |
+| PIC | `CMAKE_POSITION_INDEPENDENT_CODE ON` — `trackers` is SHARED and links the fetched static `neuriplo-tasks` | `CMakeLists.txt` |
 
 ## System Dependencies
 
@@ -66,6 +67,7 @@ ONNX Runtime headers/libs are validated at configure time; the CUDA provider
 | SORT | `trackers/SORT/` | Kalman tracker + Hungarian assignment, in-tree |
 | BoTSORT | `trackers/BoTSORT/` | In-tree; Kalman (const-velocity and acceleration-based), `lapjv` matching, global motion compensation, ONNX Re-ID |
 | OC-SORT | `trackers/OCSORT/` | In-tree, from [arXiv 2203.14360](https://arxiv.org/abs/2203.14360); observation-centric re-update, momentum-weighted association, last-observation recovery. Reuses `HungarianAlgorithm` and `cv::KalmanFilter` |
+| Mask overlap | `trackers/common/` | Binary-mask IoU used as an optional association cue by OC-SORT and C-BIoU; consumes `neuriplo_tasks::InstanceSegmentation` masks |
 | C-BIoU | `trackers/CBIoU/` | In-tree, from [arXiv 2211.14317](https://arxiv.org/abs/2211.14317); buffered IoU, two-round cascaded matching, mean-displacement motion model (no Kalman filter) |
 | ByteTrack | fetched | Adapted through `ByteTrackWrapper` |
 
@@ -151,7 +153,7 @@ BoTSORT additionally needs `--tracker_config` and `--reid_onnx`, and usually
 Tracker tuning flags, all optional and defaulting per algorithm: `--max_age`,
 `--min_hits`, `--iou_threshold`, `--track_buffer`, `--track_thresh`,
 `--high_thresh`, `--match_thresh`, `--delta_t`, `--inertia`, `--det_thresh`,
-`--biou_b1`, `--biou_b2`, `--motion_n`.
+`--biou_b1`, `--biou_b2`, `--motion_n`, `--mask_iou_weight`.
 
 ## License
 

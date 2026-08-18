@@ -8,6 +8,7 @@ C++ framework for multi-object tracking, integrating state-of-the-art tracking a
 ## Key Features
 
 - **Multiple Tracking Algorithms**: SORT, ByteTrack, BoTSORT, OC-SORT, and C-BIoU
+- **Mask-Conditioned Association**: with a segmentation model, OC-SORT and C-BIoU can associate on mask overlap instead of box overlap
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, LibTorch, OpenVINO (via [neuriplo](https://github.com/olibartfast/neuriplo))
 - **Multiple Detection Models**: YOLO series (v4->26), RT-DETR, D-FINE, and more
 - **Modular Architecture**: Trackers library can be built independently
@@ -132,6 +133,7 @@ tracker named by `--tracker`.
 | `--biou_b1` | CBIoU | 0.3 | Buffer scale for the first matching round |
 | `--biou_b2` | CBIoU | 0.5 | Buffer scale for the second round |
 | `--motion_n` | CBIoU | 5 | Observations averaged by the motion model |
+| `--mask_iou_weight` | OCSORT, CBIoU | 0 | Weight of mask overlap in association, 0–1. Needs a segmentation model; see [mask-conditioned association](docs/Tracking_Algorithms.md#mask-association) |
 
 ### Examples
 
@@ -197,6 +199,18 @@ tracker named by `--tracker`.
   --classes=person,sports\ ball \
   --biou_b1=0.4 \
   --biou_b2=0.7
+```
+
+#### Segmentation model with the mask cue
+```bash
+./neuriplo-track \
+  --type=yoloseg \
+  --source=video.mp4 \
+  --labels=coco.names \
+  --weights=yolo11n-seg.onnx \
+  --tracker=OCSORT \
+  --classes=person \
+  --mask_iou_weight=0.5
 ```
 
 ### Help
