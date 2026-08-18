@@ -40,8 +40,10 @@ int CBIoUTrack::id_counter_ = 0;
 
 void CBIoUTrack::resetIdCounter() { id_counter_ = 0; }
 
-CBIoUTrack::CBIoUTrack(const cv::Rect_<float> &box, float det_score, int det_class_id, int motion_n, int frame)
-    : score(det_score), class_id(det_class_id), motion_n_(motion_n > 0 ? static_cast<size_t>(motion_n) : 1) {
+CBIoUTrack::CBIoUTrack(const cv::Rect_<float> &box, float det_score, int det_class_id, int motion_n, int frame,
+                       const tracking::MaskRegion &mask)
+    : score(det_score), class_id(det_class_id), last_mask_(mask),
+      motion_n_(motion_n > 0 ? static_cast<size_t>(motion_n) : 1) {
     id = id_counter_++;
     hits = 1;
     hit_streak = 1;
@@ -82,7 +84,9 @@ cv::Rect_<float> CBIoUTrack::predict() const {
     return predicted;
 }
 
-void CBIoUTrack::update(const cv::Rect_<float> &box, float det_score, int det_class_id, int frame) {
+void CBIoUTrack::update(const cv::Rect_<float> &box, float det_score, int det_class_id, int frame,
+                        const tracking::MaskRegion &mask) {
+    last_mask_ = mask;
     observations_.push_back(Observation{frame, box});
     while (observations_.size() > motion_n_ + 1) {
         observations_.pop_front();
@@ -100,10 +104,17 @@ void CBIoUTrack::markMissed() {
         hit_streak = 0;
     }
     time_since_update += 1;
+
+    // The predicted box moves on while the mask cannot: it is a per-frame
+    // observation, never propagated. Drop it so the cascade falls back to
+    // buffered box overlap until a new observation supplies a fresh one.
+    last_mask_ = tracking::MaskRegion{};
 }
 
-CBIoUTracker::CBIoUTracker(int max_age, int min_hits, float iou_threshold, float b1, float b2, int motion_n)
-    : max_age_(max_age), min_hits_(min_hits), iou_threshold_(iou_threshold), b1_(b1), b2_(b2), motion_n_(motion_n) {}
+CBIoUTracker::CBIoUTracker(int max_age, int min_hits, float iou_threshold, float b1, float b2, int motion_n,
+                           float mask_iou_weight)
+    : max_age_(max_age), min_hits_(min_hits), iou_threshold_(iou_threshold), b1_(b1), b2_(b2), motion_n_(motion_n),
+      mask_iou_weight_(mask_iou_weight) {}
 
 void CBIoUTracker::associate(const std::vector<DetectionBox> &detections,
                              const std::vector<cv::Rect_<float>> &predictions, float buffer,
@@ -132,8 +143,13 @@ void CBIoUTracker::associate(const std::vector<DetectionBox> &detections,
                                                std::vector<float>(detection_indices.size(), 0.0f));
 
     for (size_t i = 0; i < track_indices.size(); ++i) {
+        const CBIoUTrack &track = tracks_[track_indices[i]];
         for (size_t j = 0; j < detection_indices.size(); ++j) {
-            iou_matrix[i][j] = bufferedIoU(predictions[track_indices[i]], detections[detection_indices[j]].box, buffer);
+            const DetectionBox &detection = detections[detection_indices[j]];
+            // The mask cue rides on top of the buffered box overlap, so the
+            // cascade keeps its shape and only the score it ranks changes.
+            iou_matrix[i][j] = tracking::blendOverlap(bufferedIoU(predictions[track_indices[i]], detection.box, buffer),
+                                                      track.lastMask(), detection.mask, mask_iou_weight_);
             cost_matrix[i][j] =
                 iou_matrix[i][j] < iou_threshold_ ? kUnmatchableCost : 1.0 - static_cast<double>(iou_matrix[i][j]);
         }
@@ -182,7 +198,7 @@ std::vector<TrackBox> CBIoUTracker::update(const std::vector<DetectionBox> &dete
     for (size_t i = 0; i < tracks_.size(); ++i) {
         if (detection_for_track[i] >= 0) {
             const DetectionBox &detection = dets[static_cast<size_t>(detection_for_track[i])];
-            tracks_[i].update(detection.box, detection.score, detection.class_id, frame_count_);
+            tracks_[i].update(detection.box, detection.score, detection.class_id, frame_count_, detection.mask);
         } else {
             tracks_[i].markMissed();
         }
@@ -190,7 +206,7 @@ std::vector<TrackBox> CBIoUTracker::update(const std::vector<DetectionBox> &dete
 
     for (size_t j = 0; j < dets.size(); ++j) {
         if (!detection_matched[j]) {
-            tracks_.emplace_back(dets[j].box, dets[j].score, dets[j].class_id, motion_n_, frame_count_);
+            tracks_.emplace_back(dets[j].box, dets[j].score, dets[j].class_id, motion_n_, frame_count_, dets[j].mask);
         }
     }
 

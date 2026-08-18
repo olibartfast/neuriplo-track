@@ -23,6 +23,8 @@ struct TrackerOverrides {
     std::optional<float> cbiou_b1;
     std::optional<float> cbiou_b2;
     std::optional<int> cbiou_motion_n;
+
+    std::optional<float> mask_iou_weight;
 };
 
 struct AppConfig {
