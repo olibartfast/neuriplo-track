@@ -543,7 +543,7 @@ Multiple Object Tracking has reached maturity in many scenarios, but challenges 
 ### 7.3 Development Roadmap
 
 **Short-term (6-12 months)**:
-- [ ] Integration of additional trackers (OC-SORT, StrongSORT)
+- [ ] Integration of additional trackers (OC-SORT, C-BIoU, McByte, StrongSORT) — see the [Roboflow `trackers` benchmarks](https://trackers.roboflow.com/) for reference scores
 - [ ] ONNX Runtime performance optimization
 - [ ] Multi-camera tracking support
 - [ ] Real-time visualization improvements

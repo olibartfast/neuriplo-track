@@ -90,8 +90,9 @@ a number.
 ## Phase 5 — Capability
 
 - [ ] **Additional trackers.** Extend along the existing wrapper path
-      (DeepSORT, OC-SORT, Hybrid-SORT) following the five-step procedure in
-      `AGENTS.md`.
+      (OC-SORT, C-BIoU, McByte, StrongSORT) following the five-step procedure in
+      `AGENTS.md`. See the benchmark table in `docs/Tracking_Algorithms.md` for
+      what each buys over the three already integrated.
 - [ ] **Batch and multi-stream processing.** `AppConfig::batch_size` exists and
       is parsed, but the pipeline processes one source frame-by-frame.
 - [ ] **Performance instrumentation.** Per-stage timing (detect / track / draw)
