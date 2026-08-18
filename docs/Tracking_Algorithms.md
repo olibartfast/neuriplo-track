@@ -274,6 +274,36 @@ ByteTrack's key insight is leveraging low-confidence detections typically discar
 | **Memory Usage** | Low | Medium | High |
 | **Implementation Complexity** | Low | Medium | High |
 
+### External Benchmark Reference
+
+The numbers above are indicative. For an independently measured, apples-to-apples
+comparison across algorithms, use the [Roboflow `trackers` benchmarks](https://trackers.roboflow.com/)
+([repo](https://github.com/roboflow/trackers)), which reports HOTA on MOT17,
+SportsMOT, SoccerNet and DanceTrack with default parameters:
+
+| Algorithm | MOT17 HOTA | SportsMOT HOTA | SoccerNet HOTA | DanceTrack HOTA | Available here |
+|-----------|-----------:|---------------:|---------------:|----------------:|----------------|
+| [SORT](https://arxiv.org/abs/1602.00763) | 58.4 | 70.8 | 81.6 | 47.2 | ✅ |
+| [ByteTrack](https://arxiv.org/abs/2110.06864) | 60.1 | 73.0 | 84.0 | 53.3 | ✅ |
+| [OC-SORT](https://arxiv.org/abs/2203.14360) | 61.9 | 71.7 | 78.4 | 54.1 | ❌ |
+| [BoT-SORT](https://arxiv.org/abs/2206.14651) | 63.7 | 73.8 | 84.5 | 57.8 | ✅ |
+| [C-BIoU](https://arxiv.org/abs/2211.14317) | 63.0 | 73.1 | 82.6 | 56.7 | ❌ |
+| [McByte](https://arxiv.org/abs/2506.01373) | **64.1** | **76.5** | **85.0** | **67.2** | ❌ |
+
+Read these as relative ordering, not as targets for this project's C++
+implementations:
+
+- **Detections differ per dataset.** MOT17, SportsMOT and DanceTrack use YOLOX
+  detections; SoccerNet uses oracle ground-truth boxes, which is why its scores
+  sit 20+ HOTA above MOT17. Tracking metrics move with detector quality.
+- **Default parameters only.** The comparison page also reports grid-searched
+  configurations, where the gaps between trackers narrow considerably (on MOT17,
+  tuned SORT reaches 60.4 against ByteTrack's 60.5).
+- **The McByte row has a different basis.** It is author-reported (PR #513)
+  against a BoT-SORT-without-Re-ID baseline rather than measured in the same
+  five-tracker sweep, though that baseline matches the BoT-SORT run above.
+- **Benchmark version:** `trackers` v2.3.0 (released 2026-03-16).
+
 ### Feature Comparison
 
 | Feature | SORT | ByteTrack | BoTSORT |
