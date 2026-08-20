@@ -34,6 +34,19 @@ if(NOT BUILD_ONLY_LIB)
     target_link_libraries(test_track_config PRIVATE ${OpenCV_LIBS} glog::glog)
     add_test(NAME track_config COMMAND test_track_config)
 
+    # MOT format: needs no tracker, no OpenCV and no detector.
+    add_executable(test_mot_file
+        ${CMAKE_CURRENT_LIST_DIR}/test_mot_file.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/../app/src/MotFile.cpp
+    )
+    target_compile_options(test_mot_file PRIVATE ${NEURIPLO_TRACK_WARNING_FLAGS})
+    target_include_directories(test_mot_file PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_LIST_DIR}/../app/inc
+        ${CMAKE_CURRENT_LIST_DIR}/../include
+    )
+    add_test(NAME mot_file COMMAND test_mot_file)
+
     add_executable(test_utils
         ${CMAKE_CURRENT_LIST_DIR}/test_utils.cpp
         ${CMAKE_CURRENT_LIST_DIR}/../app/src/utils.cpp
