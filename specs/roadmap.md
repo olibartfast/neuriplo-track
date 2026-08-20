@@ -69,7 +69,11 @@ currently passes because there is nothing to run.
 ## Phase 3 — Evaluation
 
 Comparing trackers is the stated user need; right now there is no way to produce
-a number.
+a number. All three bullets are being addressed together in
+[2026-08-20-evaluation](2026-08-20-evaluation/requirements.md), which amends the
+HOTA part: HOTA needs [TrackEval](https://github.com/JonathonLuiten/TrackEval),
+which consumes the MOT files produced here, so it is documented as a route
+rather than implemented.
 
 - [ ] **MOT-format output.** Write per-frame tracking results in MOTChallenge
       format so external evaluators can consume a run.
