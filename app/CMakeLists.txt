@@ -6,6 +6,7 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MultiObjectTrackingApp.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineParser.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/MotFile.cpp
 )
 
 # Create executable
