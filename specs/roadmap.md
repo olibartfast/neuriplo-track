@@ -70,23 +70,48 @@ currently passes because there is nothing to run.
 
 ## Phase 3 — Evaluation
 
-Comparing trackers is the stated user need; right now there is no way to produce
-a number. All three bullets are being addressed together in
+Comparing trackers was the stated user need, and there was no way to produce a
+number. All three bullets were addressed together in
 [2026-08-20-evaluation](2026-08-20-evaluation/requirements.md), which amends the
 HOTA part: HOTA needs [TrackEval](https://github.com/JonathonLuiten/TrackEval),
 which consumes the MOT files produced here, so it is documented as a route
 rather than implemented.
 
-- [ ] **MOT-format output.** Write per-frame tracking results in MOTChallenge
-      format so external evaluators can consume a run.
-- [ ] **Metrics harness.** Wire up MOTA / IDF1 / HOTA reporting over the MOT
-      output — `trackers/BoTSORT/src/mot_metrics_evaluator.py` exists as a
-      starting point but is not reachable from any project workflow.
-- [ ] **Reproducible comparison run.** A script that runs all three trackers over
-      the same detections on a fixed clip and emits one comparison table, so
-      tracker changes have a regression signal.
+- [x] **MOT-format output.** `--mot_output` writes per-frame tracking results in
+      MOTChallenge format; `--save_detections` captures the detections the
+      tracker saw, and `--detections` replays them with no detector, no
+      inference engine and no backend. Rendering became optional, so an
+      evaluation run encodes no video. Verified on real data: capturing a
+      300-frame run and replaying it through the same tracker gives **identical**
+      MOT output ([2026-08-20-evaluation](2026-08-20-evaluation/validation.md)).
+- [x] **Metrics harness.** `scripts/eval_mot.py` reports MOTA / MOTP / IDF1 /
+      IDP / IDR / precision / recall / MT / PT / ML / FP / FN / IDsw / FM over a
+      MOT file, from a documented command, and prints above every summary that
+      these are a regression signal and not MOTChallenge results. HOTA is
+      documented as a TrackEval route rather than reimplemented.
+      `trackers/BoTSORT/src/mot_metrics_evaluator.py` is superseded and left
+      untouched. **Caveat:** the metric computation itself is *not executed* in
+      the packet's results — py-motmetrics was not installable in that session,
+      so the reader, the error paths and the missing-dependency hint are
+      verified but the numbers are not.
+- [x] **Reproducible comparison run.** `scripts/compare_trackers.sh` replays one
+      detection capture through every tracker and prints one table. Over the
+      same 122 detections it shows SORT at 13 track ids (mean length 4.1)
+      against ByteTrack at 2 (mean length 34.5) — the fragmentation gap the demo
+      reel reported by eye, now as a number. It also surfaced a pre-existing
+      crash: BoTSORT's Re-ID cropped the frame with an unclamped ROI, so a
+      drifted Kalman prediction aborted the run. Fixed in the same branch.
 
 ## Phase 4 — Consumability
+
+The first two bullets are specified together in
+[2026-09-22-integrations](2026-09-22-integrations/requirements.md), which found
+that `install()` is not the hard part: every `PUBLIC` include directory on
+`trackers` is a build-tree absolute path, ONNX Runtime is linked `PUBLIC` by
+absolute path, and the fetched `bytetrack` target cannot appear in an export
+set. The packet also picks up a defect outside this phase — sibling checkouts
+override the `versions.env` pins unconditionally and silently, so a package
+built on a developer machine records a version it was not built against.
 
 - [ ] **Install and export targets.** Neither `CMakeLists.txt` nor
       `trackers/CMakeLists.txt` has an `install()` or `export()` rule, so the
@@ -108,15 +133,6 @@ rather than implemented.
 - [x] **OC-SORT and C-BIoU.** Implemented in-tree from the papers, wrapped behind
       `BaseTracker`, and selectable as `--tracker=OCSORT` / `--tracker=CBIoU`
       ([2026-08-18-ocsort-cbiou](2026-08-18-ocsort-cbiou/requirements.md)).
-The first two bullets are specified together in
-[2026-09-22-integrations](2026-09-22-integrations/requirements.md), which found
-that `install()` is not the hard part: every `PUBLIC` include directory on
-`trackers` is a build-tree absolute path, ONNX Runtime is linked `PUBLIC` by
-absolute path, and the fetched `bytetrack` target cannot appear in an export
-set. The packet also picks up a defect outside this phase — sibling checkouts
-override the `versions.env` pins unconditionally and silently, so a package
-built on a developer machine records a version it was not built against.
-
       Both are motion-only, so neither adds a dependency or a model asset.
 - [ ] **Remaining trackers.** McByte extends BoT-SORT with a *temporally
       propagated* mask as an association cue: SAM seeds a tracklet's mask from
@@ -128,6 +144,18 @@ built on a developer machine records a version it was not built against.
       StrongSORT would reuse the BoTSORT Re-ID path; it has no row in the
       benchmark table in `docs/Tracking_Algorithms.md`, because the Roboflow
       suite does not implement it.
+- [ ] **Decide what the mask cue is worth.** Measured for the first time on
+      2026-09-22 ([2026-08-20-evaluation](2026-08-20-evaluation/validation.md)):
+      the cue changes the tracking result on 43.8% / 56.7% / 71.1% of frames at
+      `--mask_iou_weight` 0.25 / 0.5 / 1.0, while distinct identities fall
+      38 → 32 → 28 and mean track length rises. A monotonic, dose-dependent
+      response. This **overturns** the PR #4 conclusion that it "essentially
+      never changes an association decision" — that finding came from eyeballing
+      two overlays that were nearly empty because `ocsort_det_thresh` defaults
+      to 0.6. Whether the cue *helps* is still unknown: fewer, longer tracks is
+      what less fragmentation looks like and equally what merging two objects
+      looks like, and telling them apart needs a clip with ground truth, which
+      this repository does not have. Until then the default of 0 stands.
 - [x] **Let masks reach the tracker.** `BaseTracker` has an
       `InstanceSegmentation` overload (default slices to `Detection`), the app
       extracts segmentation results, and OC-SORT and C-BIoU can blend mask IoU
