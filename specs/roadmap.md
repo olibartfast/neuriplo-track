@@ -44,10 +44,12 @@ currently passes because there is nothing to run.
       implementation is driven through scripted `Detection` frames — linear
       motion, occlusion gap, crossing objects, class filtering, degenerate
       input — with identity continuity asserted for OC-SORT and C-BIoU.
-- [ ] **Pin the floating dependencies.** `NEURIPLO_VERSION="master"` and
-      `BYTETRACK_VERSION="main"` mean two builds a week apart are not the same
-      build — contradicting the reproducibility principle in
-      [mission.md](mission.md). Pin both to tags or commit SHAs.
+- [x] **Pin the floating dependencies.** Every fetched dependency is pinned in
+      `versions.env` (`d96b8cc`, `cbd0d17`): neuriplo `v0.8.0`, neuriplo-tasks
+      `v0.8.1`, ByteTrack-cpp at commit `d43805d`. Caveat: the pins are
+      *overridden* by sibling checkouts unconditionally, so a developer machine
+      with `../neuriplo-tasks` does not build what the pins say — picked up in
+      [2026-09-22-integrations](2026-09-22-integrations/requirements.md), R-5.
 - [ ] **Move the ONNX Runtime version into `versions.env`.** `1.19.2` is
       hardcoded in `CMakeLists.txt` while every other version lives in one place.
 
@@ -90,9 +92,13 @@ rather than implemented.
       `trackers/CMakeLists.txt` has an `install()` or `export()` rule, so the
       "embed the tracker library elsewhere" use case requires vendoring the
       source tree. Add install rules and a package config so downstream projects
-      can `find_package(neuriplo-track)`.
-- [ ] **Version the tracker library.** Give `trackers` a `SOVERSION` and state a
-      stability policy for `BaseTracker` / `TrackedObject` / `TrackConfig`.
+      can `find_package(neuriplo-track)` — split into `core` (motion-only, no
+      ONNX Runtime) and `reid` (BoTSORT) components.
+- [ ] **Version the tracker library.** Give the components a `SOVERSION` and
+      state a stability policy for `BaseTracker` / `TrackedObject` /
+      `TrackConfig`. Bounded by neuriplo-tasks: the public interface carries
+      `neuriplo_tasks::Detection`, so the pin in `versions.env` is part of the
+      ABI contract.
 - [ ] **Broaden backend CI coverage.** CI exercises only the default backend;
       the other five can break silently. Add at least an `OPENCV_DNN` job (no
       external download needed) and a configure-only check for the rest.
@@ -102,6 +108,15 @@ rather than implemented.
 - [x] **OC-SORT and C-BIoU.** Implemented in-tree from the papers, wrapped behind
       `BaseTracker`, and selectable as `--tracker=OCSORT` / `--tracker=CBIoU`
       ([2026-08-18-ocsort-cbiou](2026-08-18-ocsort-cbiou/requirements.md)).
+The first two bullets are specified together in
+[2026-09-22-integrations](2026-09-22-integrations/requirements.md), which found
+that `install()` is not the hard part: every `PUBLIC` include directory on
+`trackers` is a build-tree absolute path, ONNX Runtime is linked `PUBLIC` by
+absolute path, and the fetched `bytetrack` target cannot appear in an export
+set. The packet also picks up a defect outside this phase — sibling checkouts
+override the `versions.env` pins unconditionally and silently, so a package
+built on a developer machine records a version it was not built against.
+
       Both are motion-only, so neither adds a dependency or a model asset.
 - [ ] **Remaining trackers.** McByte extends BoT-SORT with a *temporally
       propagated* mask as an association cue: SAM seeds a tracklet's mask from
