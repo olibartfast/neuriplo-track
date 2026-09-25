@@ -90,6 +90,7 @@ per-algorithm defaults before applying command-line overrides.
 | Option | Default | Effect |
 |--------|---------|--------|
 | `DEFAULT_BACKEND` | `ONNX_RUNTIME` | Inference backend selection |
+| `NEURIPLO_TRACK_BUILD_TESTS` | `ON` | Build and register the ctest suites |
 | `CMAKE_BUILD_TYPE` | — | `Release` for deployment, `Debug` in the strict-warning CI job |
 | `BUILD_ONLY_LIB` | `OFF` | Build the `trackers` shared library without the CLI app |
 | `WERROR` | `OFF` | Treat warnings as errors |
@@ -98,7 +99,6 @@ Targets: `trackers` (SHARED library) and `neuriplo-track` (CLI executable, built
 unless `BUILD_ONLY_LIB=ON`).
 
 ## Repository Layout
-| `NEURIPLO_TRACK_BUILD_TESTS` | `ON` | Build and register the ctest suites |
 
 ```
 app/           CLI application (neuriplo-track binary)
@@ -109,8 +109,10 @@ include/       BaseTracker, TrackConfig, TrackedObject, wrapper headers
 cmake/         versions.cmake, DependencyValidation.cmake
 docs/          Architecture, algorithms, build, MOT guide, e2e test
 specs/         Product specs (this folder) and dated feature packets
-tests/         ctest suite: trackers, track_config, utils
-scripts/       setup_dependencies.sh, mot_docker_cpu.sh
+tests/         ctest suites: trackers, mask_overlap, track_config, mot_file,
+               eval_options, replay, utils
+scripts/       setup_dependencies.sh, mot_docker_cpu.sh, eval_mot.py,
+               compare_trackers.sh
 ```
 
 ## Core Types
@@ -128,6 +130,8 @@ scripts/       setup_dependencies.sh, mot_docker_cpu.sh
 | Concern | Tool | Config |
 |---------|------|--------|
 | Tests | ctest + plain assertions (no framework) | `tests/CMakeLists.txt`, `tests/test_util.hpp` |
+| Scoreboard | `cmake --workflow --preset scoreboard` — configures, builds and tests in one invocation, so it cannot pass over stale binaries | `CMakePresets.json`, [orchestration.md](orchestration.md) |
+| Evaluation | py-motmetrics, **evaluation-only**: nothing in the build or the test suite needs it | `scripts/eval_mot.py` |
 | Formatting | clang-format | `.clang-format` |
 | Static analysis | clang-tidy | `.clang-tidy` |
 | Pre-commit | pre-commit | `.pre-commit-config.yaml` |
@@ -158,6 +162,16 @@ Details in [`DOCKER.md`](../DOCKER.md).
 
 BoTSORT additionally needs `--tracker_config` and `--reid_onnx`, and usually
 `--gmc_config` / `--reid_config`.
+
+Evaluation flags: `--mot_output <file>` (tracking results, MOTChallenge
+format), `--save_detections <file>` (the detections the tracker saw, `id = -1`,
+captured after class filtering), `--detections <file>` (replay those instead of
+running a detector — no detector, no inference engine and no backend is
+constructed). `--output` is auto-generated only when no other output was
+requested, so an evaluation run encodes no video. Incoherent combinations are
+rejected by `validateEvaluationOptions` (`app/src/utils.cpp`), a pure function
+so the rules are testable without spawning a process — the same pattern as
+`validateTrackerOverrides`.
 
 Tracker tuning flags, all optional and defaulting per algorithm: `--max_age`,
 `--min_hits`, `--iou_threshold`, `--track_buffer`, `--track_thresh`,

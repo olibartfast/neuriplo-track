@@ -47,6 +47,14 @@ Optional flags: `BUILD_ONLY_LIB=ON` (trackers library only), `WERROR=ON` (strict
 ## Architecture
 
 - **BaseTracker** (`include/BaseTracker.hpp`): abstract interface; `update(detections, frame)` returns `TrackedObject` vectors. A second `update` overload takes `neuriplo_tasks::InstanceSegmentation`; its default slices to `Detection` and delegates, so only mask-aware trackers override it. Note `update({})` is ambiguous — name the vector type.
+- **Evaluation** (`app/inc/MotFile.hpp`, `MultiObjectTrackingApp::replayDetections`):
+  `--mot_output` writes MOTChallenge rows; `--save_detections` captures the
+  detections the tracker saw (after class filtering, which is what makes a
+  replay reproduce the run); `--detections` replays them with no detector,
+  engine or backend. Replayed records carry a synthetic class id because the
+  format has no class column. `scripts/compare_trackers.sh` drives all five
+  trackers over one capture; `scripts/eval_mot.py` scores one against ground
+  truth.
 - **Mask cue** (`trackers/common/MaskOverlap.hpp`): mask IoU blended into association by `TrackConfig::mask_iou_weight` (`--mask_iou_weight`), implemented in OC-SORT and C-BIoU. Not McByte: masks are per-frame, never propagated.
 - **Wrappers** (`include/*Wrapper.hpp`, `trackers/*Wrapper.cpp`): adapt SORT, ByteTrack, BoTSORT, OC-SORT, and C-BIoU to the common interface.
 - **TrackConfig** (`include/TrackConfig.hpp`): classes to track, IoU/age thresholds, per-algorithm parameters (ByteTrack, OC-SORT, C-BIoU), BoTSORT config paths (tracker.ini, gmc.ini, reid.ini, reid ONNX).
@@ -78,9 +86,16 @@ cmake --build --preset strict          # -Werror gate, compile only
 cmake --workflow --preset lib-only     # trackers must not depend on app/
 ```
 
-Three suites: `trackers` (tracker behaviour against scripted `Detection`
-sequences), `track_config` (CLI → `TrackConfig` resolution), `utils`. They need
-no weights and no video. `-DNEURIPLO_TRACK_BUILD_TESTS=OFF` skips building them.
+Presets need CMake >= 3.25; the project itself still builds with 3.20 and a
+plain `cmake -S . -B build`. Role boundaries, delegation packets and the attempt
+log are in [specs/orchestration.md](specs/orchestration.md).
+
+Seven suites: `trackers` (tracker behaviour against scripted `Detection`
+sequences), `mask_overlap` (the mask-IoU primitive), `track_config` (CLI →
+`TrackConfig` resolution), `mot_file` (MOTChallenge read/write round trip),
+`eval_options` (evaluation flag combinations), `replay` (the real binary
+replaying a hand-written detection file), and `utils`. They need no weights and
+no video. `-DNEURIPLO_TRACK_BUILD_TESTS=OFF` skips building them.
 When adding tracker logic, add a case to `tests/test_trackers.cpp`.
 
 CI (`.github/workflows/ci.yml`): Release build with Ninja on ubuntu-24.04; separate job with `WERROR=ON`. Markdown-only changes do not trigger CI.
@@ -101,7 +116,8 @@ When editing `README.md` or any documentation with hyperlinks:
 | `docs/Tracking_Algorithms.md` | SORT / ByteTrack / BoTSORT concepts |
 | `docs/Code_Examples.md` | Implementation snippets |
 | `docs/Build_Instructions.md` | Detailed build and troubleshooting |
-| `docs/Multiple_Object_Tracking_Guide.md` | MOT background and metrics |
+| `docs/Multiple_Object_Tracking_Guide.md` | MOT background, metrics, and what this repo's harness does and does not compute |
+| `specs/orchestration.md` | Role boundaries, the scoreboard, delegation packets |
 | `DOCKER.md` | Container deployment |
 
 ## Common Pitfalls
