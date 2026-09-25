@@ -12,6 +12,7 @@ edit to this one.
 | date | packet | base | planner | worker | planner_ctx | worker_ctx | tool_calls | turns | wall | cost | outcome | interventions | notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 2026-09-22 | orchestration bootstrap | 95b048e | opus-5 | — | — | — | — | — | — | — | pass (0) | 0 | Baseline: no delegation. Establishes the scoreboard preset and confirms 5/5 suites pass from a cold configure. Everything below is compared against this. **Built against sibling checkouts, not the pins** (`../neuriplo-tasks` at v0.8.2-2-gd320092 vs pinned v0.8.1) -- see the hermeticity defect in orchestration.md. |
+| 2026-09-22 | 2026-08-20-evaluation G2-G5 | 95b048e | opus-5 | — (in-context) | — | — | — | — | ~2h incl. two 300-frame model runs | — | pass (0) | 0 | Groups 2-5 delivered in one context, not delegated: see "When not to delegate" — the flag-combination rules and the replay/class-filtering interaction are judgement, not transcription. Scoreboard 7/7. Same sibling-checkout caveat as the row above. |
 
 Nothing is delegated until a row here shows what the single-context baseline
 costs. Delegating before that measurement is how the same-model delegation trap

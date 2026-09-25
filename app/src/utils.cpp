@@ -193,3 +193,54 @@ cv::VideoWriter setupVideoWriter(const cv::VideoCapture &cap, const std::string 
     double fps = cap.get(cv::CAP_PROP_FPS);
     return cv::VideoWriter(outputPath, cv::VideoWriter::fourcc('m', 'p', '4', 'v'), fps, frame_size);
 }
+
+std::optional<std::string> validateEvaluationOptions(const AppConfig &config) {
+    if (config.isReplay()) {
+        // A replay has no detector to configure, so anything that only makes
+        // sense with one is rejected rather than silently ignored.
+        if (!config.weights.empty()) {
+            return "--detections replays captured detections, so --weights has nothing to load. Drop one of them.";
+        }
+        if (!config.detectorType.empty()) {
+            return "--detections replays captured detections, so --type has no detector to select. Drop one of them.";
+        }
+        if (!config.saveDetectionsPath.empty()) {
+            return "--save_detections captures a detector's output, and --detections means there is no detector. "
+                   "Drop one of them.";
+        }
+        if (config.trackerOverrides.mask_iou_weight && *config.trackerOverrides.mask_iou_weight > 0.0f) {
+            // Masks are per-frame detector output and a MOT file carries only
+            // boxes, so the cue would be silently inert on this path.
+            return "--mask_iou_weight needs per-frame masks from a segmentation model, which a replayed detection "
+                   "file does not carry. Run without --detections to use the mask cue.";
+        }
+        if (!config.outputPath.empty() && config.source.empty()) {
+            return "--output renders onto the source frames, so a replay that writes a video also needs --source.";
+        }
+        if (config.displayOutput && config.source.empty()) {
+            return "--display draws onto the source frames, so a replay that displays also needs --source.";
+        }
+        if (canonicalTrackerName(config.trackingAlgorithm) == "BoTSORT" && config.source.empty()) {
+            return "BoTSORT extracts Re-ID features from the frame, so replaying it also needs --source.";
+        }
+        return std::nullopt;
+    }
+
+    if (config.source.empty()) {
+        return "--source is required unless the run replays a detection file with --detections.";
+    }
+
+    return std::nullopt;
+}
+
+bool shouldWriteVideo(const AppConfig &config) {
+    if (!config.outputPath.empty()) {
+        return true;
+    }
+    // No --output. Before the evaluation flags existed every run produced a
+    // video at an auto-generated path, and invocations that predate them should
+    // keep doing so. A run that asked for a MOT file or a detection capture is
+    // asking for those instead, and should not pay for H.264 encoding it never
+    // requested.
+    return config.motOutputPath.empty() && config.saveDetectionsPath.empty() && !config.isReplay();
+}

@@ -38,8 +38,32 @@ const std::string CommandLineParser::params =
     "{ min_confidence| 0.25   | minimum confidence threshold }"
     "{ batch         | 1      | batch size for inference }"
     "{ input_sizes   |        | input sizes for the model }"
-    "{ output        |        | output video path (auto-generated if not specified) }"
-    "{ display       | false  | display output video }";
+    "{ output        |        | output video path (auto-generated only when no other output is requested) }"
+    "{ display       | false  | display output video }"
+    // Evaluation
+    "{ mot_output      |      | write tracking results to this file, MOTChallenge format }"
+    "{ save_detections |      | capture the detections fed to the tracker, same format, id=-1 }"
+    "{ detections      |      | replay a captured detection file instead of running a detector }";
+
+namespace {
+
+// cv::CommandLineParser::has() reports whether a field currently holds a
+// non-empty value, which is true for any field carrying a default -- so it
+// cannot answer "did the user pass --type?" for a field whose default is
+// "yolov8". The argument vector can, so it is consulted directly.
+bool wasProvided(int argc, char *argv[], const std::string &name) {
+    for (int i = 1; i < argc; ++i) {
+        const std::string argument = argv[i];
+        for (const auto &prefix : {"--" + name, "-" + name}) {
+            if (argument == prefix || argument.starts_with(prefix + "=")) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+} // namespace
 
 AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
     cv::CommandLineParser parser(argc, argv, params);
@@ -54,11 +78,17 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
 
     AppConfig config;
 
-    // Required parameters
+    // Required parameters. On a replay, --type and --weights have no detector to
+    // configure, so they are left empty unless the user actually passed them --
+    // "yolov8" is the default of the --type field, not a request for a detector,
+    // and validateEvaluationOptions() must be able to tell those apart.
+    const bool replay = parser.has("detections");
+
     config.source = parser.get<std::string>("source");
     config.weights = parser.get<std::string>("weights");
     config.labelsPath = parser.get<std::string>("labels");
-    config.detectorType = parser.get<std::string>("type");
+    config.detectorType =
+        (replay && !wasProvided(argc, argv, "type")) ? std::string{} : parser.get<std::string>("type");
     config.trackingAlgorithm = parser.get<std::string>("tracker");
 
     // Parse classes to track
@@ -94,13 +124,38 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
         // For now, leave empty
     }
 
-    // Output settings
+    // Output settings. An unset --output stays empty here; shouldWriteVideo()
+    // decides whether a path is generated, because that decision depends on
+    // the evaluation flags read just below.
     if (parser.has("output")) {
         config.outputPath = parser.get<std::string>("output");
-    } else {
-        config.outputPath = generateOutputPath(config.source);
     }
     config.displayOutput = parser.get<bool>("display");
+
+    // Evaluation
+    if (parser.has("mot_output")) {
+        config.motOutputPath = parser.get<std::string>("mot_output");
+    }
+    if (parser.has("save_detections")) {
+        config.saveDetectionsPath = parser.get<std::string>("save_detections");
+    }
+    if (replay) {
+        config.detectionsPath = parser.get<std::string>("detections");
+    }
+
+    if (const auto problem = validateEvaluationOptions(config)) {
+        LOG(ERROR) << *problem;
+        std::exit(1);
+    }
+
+    if (replay && !config.classesToTrack.empty()) {
+        LOG(WARNING) << "--classes is ignored on a replay: a detection file is captured after class filtering, "
+                        "so it already contains exactly the classes that were tracked.";
+    }
+
+    if (!parser.has("output") && shouldWriteVideo(config)) {
+        config.outputPath = generateOutputPath(config.source);
+    }
 
     return config;
 }
@@ -151,6 +206,23 @@ void CommandLineParser::printHelpMessage(const cv::CommandLineParser &parser) {
 }
 
 void CommandLineParser::validateArguments(const cv::CommandLineParser &parser) {
+    // A replay runs no detector, so it needs neither weights nor a labels file,
+    // and its frames may come from the detection file rather than a video.
+    // Everything a replay *does* require is checked here; the combinations that
+    // are merely incoherent are left to validateEvaluationOptions().
+    if (parser.has("detections")) {
+        const std::string detections = parser.get<std::string>("detections");
+        if (!std::filesystem::exists(detections)) {
+            LOG(ERROR) << "Detection file not found: " << detections;
+            std::exit(1);
+        }
+        if (parser.has("source") && !std::filesystem::exists(parser.get<std::string>("source"))) {
+            LOG(ERROR) << "Video source not found: " << parser.get<std::string>("source");
+            std::exit(1);
+        }
+        return;
+    }
+
     if (!parser.has("source")) {
         LOG(ERROR) << "Source is required";
         printHelpMessage(parser);
