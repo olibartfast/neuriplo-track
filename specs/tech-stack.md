@@ -34,14 +34,22 @@ read from `versions.env` by `cmake/versions.cmake`.
 
 | Dependency | Pin | Role |
 |------------|-----|------|
-| [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks) | `v0.8.0` | CV task layer and shared types (`Detection`, `TaskFactory`) |
-| [neuriplo](https://github.com/olibartfast/neuriplo) | `master` | Unified inference interface across backends |
-| [ByteTrack-cpp](https://github.com/Vertical-Beach/ByteTrack-cpp) | `main` | ByteTrack implementation |
+| [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks) | `v0.8.1` | CV task layer and shared types (`Detection`, `TaskFactory`) |
+| [neuriplo](https://github.com/olibartfast/neuriplo) | `v0.8.0` | Unified inference interface across backends |
+| [ByteTrack-cpp](https://github.com/Vertical-Beach/ByteTrack-cpp) | `d43805d` | ByteTrack implementation; the repository publishes no tags |
 
 `neuriplo-tasks` and `neuriplo` are auto-detected as **sibling checkouts**: if
 `../neuriplo-tasks` or `../neuriplo` exists with a `CMakeLists.txt`, CMake uses
 the local tree instead of fetching (via `FETCHCONTENT_SOURCE_DIR_*`). Useful for
 cross-repo development.
+
+**This override is unconditional and silent.** There is no opt-out, so on a
+machine with sibling checkouts the pins above are not what gets built — the
+sibling tree is, at whatever ref it happens to be on. Check with
+`grep FETCHCONTENT_SOURCE_DIR <build>/CMakeCache.txt` before trusting a local
+build to represent the pinned one. CI has no siblings, so CI builds the pins.
+Tracked as R-5 in
+[2026-09-22-integrations](2026-09-22-integrations/requirements.md).
 
 ## Inference Backends
 
