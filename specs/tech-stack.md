@@ -90,6 +90,7 @@ Targets: `trackers` (SHARED library) and `neuriplo-track` (CLI executable, built
 unless `BUILD_ONLY_LIB=ON`).
 
 ## Repository Layout
+| `NEURIPLO_TRACK_BUILD_TESTS` | `ON` | Build and register the ctest suites |
 
 ```
 app/           CLI application (neuriplo-track binary)
