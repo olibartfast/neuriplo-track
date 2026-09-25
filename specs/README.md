@@ -9,6 +9,8 @@ specs/
 ├── mission.md                   living
 ├── tech-stack.md                living
 ├── roadmap.md                   living
+├── orchestration.md             living
+├── attempts.md                  living
 └── YYYY-MM-DD-feature-name/     historical
     ├── requirements.md          what and why
     ├── plan.md                  task groups
@@ -17,14 +19,17 @@ specs/
 
 ## Living: the constitution
 
-Three documents that describe the project **as it is now**. They are read before
-planning any feature and are updated whenever reality changes.
+Documents that describe the project **as it is now**. The first three are read
+before planning any feature; the last two govern how a phase is executed and
+what it cost. All are updated whenever reality changes.
 
 | File | Answers |
 |------|---------|
 | [mission.md](mission.md) | Who this is for, what problem it solves, what it deliberately is not |
 | [tech-stack.md](tech-stack.md) | Language, dependencies, backends, build options, layout, tooling |
 | [roadmap.md](roadmap.md) | What shipped, what is next, in reviewable phases |
+| [orchestration.md](orchestration.md) | Who executes a phase, under what boundaries, and the one command that decides the outcome |
+| [attempts.md](attempts.md) | One row per delegated attempt: cost and context by role, and the scoreboard result |
 
 If one of these disagrees with the code, the document is wrong and should be
 fixed.

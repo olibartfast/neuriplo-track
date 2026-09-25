@@ -1,0 +1,83 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "scoreboard",
+      "displayName": "Scoreboard (Release, OpenCV DNN, tests on)",
+      "description": "The adjudication build. OPENCV_DNN needs no downloaded runtime, so this configures and builds with no egress beyond the pinned FetchContent refs.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/scoreboard",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "DEFAULT_BACKEND": "OPENCV_DNN",
+        "NEURIPLO_TRACK_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "strict",
+      "displayName": "Strict warnings (Debug, WERROR)",
+      "description": "Mirrors the build-warnings CI job. Compile-only gate: catches what -Wall -Wextra -Wpedantic -Werror rejects.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/strict",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "DEFAULT_BACKEND": "OPENCV_DNN",
+        "WERROR": "ON",
+        "NEURIPLO_TRACK_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "lib-only",
+      "displayName": "Trackers library only",
+      "description": "BUILD_ONLY_LIB=ON. Guards the constraint that trackers/ must not depend on anything in app/.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/lib-only",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "DEFAULT_BACKEND": "OPENCV_DNN",
+        "BUILD_ONLY_LIB": "ON",
+        "NEURIPLO_TRACK_BUILD_TESTS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "scoreboard", "configurePreset": "scoreboard", "jobs": 0 },
+    { "name": "strict", "configurePreset": "strict", "jobs": 0 },
+    { "name": "lib-only", "configurePreset": "lib-only", "jobs": 0 }
+  ],
+  "testPresets": [
+    {
+      "name": "scoreboard",
+      "configurePreset": "scoreboard",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    },
+    {
+      "name": "lib-only",
+      "configurePreset": "lib-only",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "scoreboard",
+      "displayName": "The scoreboard: configure, build, test",
+      "steps": [
+        { "type": "configure", "name": "scoreboard" },
+        { "type": "build", "name": "scoreboard" },
+        { "type": "test", "name": "scoreboard" }
+      ]
+    },
+    {
+      "name": "lib-only",
+      "displayName": "Library-only build and test",
+      "steps": [
+        { "type": "configure", "name": "lib-only" },
+        { "type": "build", "name": "lib-only" },
+        { "type": "test", "name": "lib-only" }
+      ]
+    }
+  ]
+}

@@ -67,7 +67,15 @@ BoTSORT requires a frame for Re-ID features; SORT, ByteTrack, OC-SORT, and C-BIo
 ## Testing & CI
 
 ```bash
-ctest --test-dir build --output-on-failure
+# The scoreboard: configures, builds and tests in one invocation, so it
+# cannot return green over stale binaries. Run it once, as your final action.
+cmake --workflow --preset scoreboard
+
+# Targeted checks while working -- run these as often as useful.
+cmake --build --preset scoreboard --target test_trackers
+ctest --preset scoreboard -R trackers
+cmake --build --preset strict          # -Werror gate, compile only
+cmake --workflow --preset lib-only     # trackers must not depend on app/
 ```
 
 Three suites: `trackers` (tracker behaviour against scripted `Detection`
