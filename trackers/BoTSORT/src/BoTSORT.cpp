@@ -1,5 +1,6 @@
 #include "BoTSORT.h"
 
+#include <cmath>
 #include <optional>
 #include <unordered_set>
 
@@ -403,7 +404,26 @@ BoTSORT::track(const std::vector<Detection> &detections, const cv::Mat &frame)
 FeatureVector BoTSORT::_extract_features(const cv::Mat &frame,
                                          const cv::Rect_<float> &bbox_tlwh)
 {
-    cv::Mat patch = frame(bbox_tlwh);
+    // The box may be a Kalman *prediction*, not a detection, so it can extend
+    // past the frame edge -- and cv::Mat::operator()(Rect) throws on an ROI
+    // that does not fit. Clamp to the frame rather than letting a drifted
+    // track abort the run.
+    const cv::Rect frame_bounds(0, 0, frame.cols, frame.rows);
+    const cv::Rect requested(static_cast<int>(std::floor(bbox_tlwh.x)),
+                             static_cast<int>(std::floor(bbox_tlwh.y)),
+                             static_cast<int>(std::ceil(bbox_tlwh.width)),
+                             static_cast<int>(std::ceil(bbox_tlwh.height)));
+    const cv::Rect roi = requested & frame_bounds;
+
+    // A track predicted entirely outside the frame has no appearance to
+    // measure. Returning a zero feature leaves it to the motion cue, which is
+    // the only information that still exists for it.
+    if (roi.width <= 0 || roi.height <= 0)
+    {
+        return FeatureVector::Zero();
+    }
+
+    cv::Mat patch = frame(roi);
     return _reid_model->extract_features(patch);
 }
 

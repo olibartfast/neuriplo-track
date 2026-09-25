@@ -54,4 +54,18 @@ struct AppConfig {
     // Output settings
     std::string outputPath;
     bool displayOutput;
+
+    // Evaluation. Every one of these is empty when the flag was not passed.
+    //
+    // motOutputPath       where tracking results go, MOTChallenge format
+    // saveDetectionsPath  where the detections fed to the tracker are captured
+    // detectionsPath      a captured file to replay instead of running a detector
+    //
+    // A run is a *replay* when detectionsPath is set: no detector, no inference
+    // engine and no backend are constructed at all.
+    std::string motOutputPath;
+    std::string saveDetectionsPath;
+    std::string detectionsPath;
+
+    [[nodiscard]] bool isReplay() const { return !detectionsPath.empty(); }
 };

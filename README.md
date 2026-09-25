@@ -102,7 +102,7 @@ See [neuriplo documentation](https://github.com/olibartfast/neuriplo) for backen
 - `--use-gpu`: Enable GPU support (default: false)
 - `--min_confidence`: Minimum confidence threshold (default: 0.25)
 - `--batch`: Batch size for inference (default: 1)
-- `--output`: Output video path (auto-generated if not specified)
+- `--output`: Output video path. Auto-generated when omitted **and** no other output was requested; a run that asks only for `--mot_output` or `--save_detections` writes no video and pays no encoding cost.
 - `--display`: Display output video in real-time (default: false)
 - `--tracker_config`: Path to tracker config file (for BoTSORT)
 - `--gmc_config`: Path to GMC config file (for BoTSORT)
@@ -112,6 +112,23 @@ See [neuriplo documentation](https://github.com/olibartfast/neuriplo) for backen
   - If the model has fixed channels (e.g., YOLO `1,3,-1,-1`), pass `H,W` (such as `640,640`).
   - If all dims are dynamic (e.g., `1,-1,-1,-1`), use `C,H,W` (such as `3,640,640`).
   - See `.vscode/launch.json` for concrete examples.
+
+#### Evaluation Parameters
+
+- `--mot_output`: Write tracking results to this file in MOTChallenge format
+  (`frame,id,bb_left,bb_top,bb_width,bb_height,conf,-1,-1,-1`, 1-based frames).
+- `--save_detections`: Capture the detections fed to the tracker, same format
+  with `id = -1`. Captured *after* class filtering, so the file holds exactly
+  what the tracker saw — which is what makes a replay reproduce the run rather
+  than approximate it.
+- `--detections`: Replay a captured file instead of running a detector. No
+  model, no inference engine and no backend are constructed, so this works on a
+  machine with no ONNX Runtime and no GPU. `--weights`, `--type`,
+  `--save_detections` and `--mask_iou_weight` are rejected on this path rather
+  than silently ignored; `--source` is needed only to render, to display, or
+  for BoTSORT's Re-ID features.
+
+See [Evaluating and comparing trackers](#evaluating-and-comparing-trackers).
 
 #### Tracker Tuning Parameters
 
@@ -218,15 +235,88 @@ tracker named by `--tracker`.
 ./neuriplo-track --help
 ```
 
+## Evaluating and comparing trackers
+
+Tracker changes have a regression signal: run the same detections through every
+tracker and get one table, rather than rendering two videos and eyeballing them.
+
+**1. Capture the detections once.** The detector runs only here.
+
+```bash
+./neuriplo-track \
+  --source=clip.mp4 --type=yolov8 --weights=yolov8n.onnx \
+  --labels=coco.names --classes=person \
+  --save_detections=det.txt
+```
+
+No `--output` is given, so no video is encoded.
+
+**2. Compare every tracker over those detections.**
+
+```bash
+scripts/compare_trackers.sh --detections=det.txt
+```
+
+```
+TRACKER        TRACKS   MEAN_LEN   MAX_CONC     STATUS
+------------ -------- ---------- ---------- ----------
+SORT                2        9.0          2         ok
+ByteTrack           2       10.0          2         ok
+OCSORT              2       10.0          2         ok
+CBIoU               2       10.0          2         ok
+BoTSORT             -          -          -    skipped
+```
+
+These are **descriptive counts, not accuracy**: a tracker that fragments every
+identity can still report a flattering `TRACKS`. BoTSORT is skipped without
+`--source` because it extracts Re-ID features from the frame; pass
+`--source=clip.mp4` to include it.
+
+**3. With ground truth, get real metrics.**
+
+```bash
+pip install motmetrics                      # evaluation-only dependency
+scripts/compare_trackers.sh --detections=det.txt --gt=gt.txt
+```
+
+or score one run directly:
+
+```bash
+./neuriplo-track --detections=det.txt --tracker=OCSORT --mot_output=tracks.txt
+python3 scripts/eval_mot.py --gt=gt.txt --tracker-output=tracks.txt
+```
+
+`eval_mot.py` reports MOTA, MOTP, IDF1, IDP, IDR, precision, recall, MT/PT/ML,
+FP, FN, IDsw and FM. It prints, above every summary, that these are a
+regression signal for this repository and **not** MOTChallenge results: it does
+not handle distractor classes or the visibility column. `--check-only` parses
+both files and reports their shape without needing py-motmetrics installed.
+
+**HOTA** is not computed here. It needs
+[TrackEval](https://github.com/JonathonLuiten/TrackEval), which consumes exactly
+the MOT files this writes — so the route is to produce the output and point
+TrackEval at it.
+
+`trackers/BoTSORT/src/mot_metrics_evaluator.py` is vendored, superseded by
+`scripts/eval_mot.py`, and left untouched.
+
 ## Testing
+
+```bash
+# The full check: configures, builds and tests in one command.
+cmake --workflow --preset scoreboard
+```
+
+Or against an existing build tree:
 
 ```bash
 ctest --test-dir build --output-on-failure
 ```
 
-The suite drives every tracker with scripted detection sequences, so it needs no
-model weights and no video. Pass `-DNEURIPLO_TRACK_BUILD_TESTS=OFF` to skip
-building it.
+The suites drive every tracker with scripted detection sequences and replay a
+hand-written detection file through the real binary, so they need no model
+weights and no video. Pass `-DNEURIPLO_TRACK_BUILD_TESTS=OFF` to skip building
+them. Presets need CMake ≥ 3.25; the project itself builds with 3.20.
 
 ## Docker Deployment
 
