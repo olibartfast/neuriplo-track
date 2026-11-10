@@ -158,7 +158,7 @@ docker run --rm --gpus all \
 ### GPU Not Detected
 ```bash
 # Verify NVIDIA Docker is working
-docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi
+docker run --rm --gpus all nvidia/cuda:13.4.1-runtime-ubuntu24.04 nvidia-smi
 ```
 
 ### Permission Errors

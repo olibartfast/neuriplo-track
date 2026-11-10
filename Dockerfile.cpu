@@ -2,6 +2,9 @@
 # Stage 1: Build environment
 FROM ubuntu:22.04 AS builder
 
+# ONNX Runtime pin. Keep in sync with ONNXRUNTIME_VERSION in versions.env.
+ARG ONNXRUNTIME_VERSION=1.28.0
+
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -21,10 +24,10 @@ RUN apt-get update && apt-get install -y \
 
 # Install ONNX Runtime (CPU version)
 WORKDIR /tmp
-RUN wget https://github.com/microsoft/onnxruntime/releases/download/v1.19.2/onnxruntime-linux-x64-1.19.2.tgz \
-    && tar -xzf onnxruntime-linux-x64-1.19.2.tgz \
-    && mv onnxruntime-linux-x64-1.19.2 /opt/onnxruntime \
-    && rm onnxruntime-linux-x64-1.19.2.tgz
+RUN wget https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/onnxruntime-linux-x64-${ONNXRUNTIME_VERSION}.tgz \
+    && tar -xzf onnxruntime-linux-x64-${ONNXRUNTIME_VERSION}.tgz \
+    && mv onnxruntime-linux-x64-${ONNXRUNTIME_VERSION} /opt/onnxruntime \
+    && rm onnxruntime-linux-x64-${ONNXRUNTIME_VERSION}.tgz
 
 # Set environment variables for ONNX Runtime
 ENV ONNXRUNTIME_DIR=/opt/onnxruntime

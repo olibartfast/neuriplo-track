@@ -45,13 +45,16 @@ currently passes because there is nothing to run.
       motion, occlusion gap, crossing objects, class filtering, degenerate
       input — with identity continuity asserted for OC-SORT and C-BIoU.
 - [x] **Pin the floating dependencies.** Every fetched dependency is pinned in
-      `versions.env` (`d96b8cc`, `cbd0d17`): neuriplo `v0.8.0`, neuriplo-tasks
-      `v0.8.1`, ByteTrack-cpp at commit `d43805d`. Caveat: the pins are
+      `versions.env`: neuriplo `v0.11.3`, neuriplo-tasks `v0.8.5`,
+      ByteTrack-cpp at commit `d43805d` (still the head of `main`; the repository
+      publishes no tags). Caveat: the pins are
       *overridden* by sibling checkouts unconditionally, so a developer machine
       with `../neuriplo-tasks` does not build what the pins say — picked up in
       [2026-09-22-integrations](2026-09-22-integrations/requirements.md), R-5.
-- [ ] **Move the ONNX Runtime version into `versions.env`.** `1.19.2` is
-      hardcoded in `CMakeLists.txt` while every other version lives in one place.
+- [x] **Move the ONNX Runtime version into `versions.env`.** `ONNXRUNTIME_VERSION`
+      (`1.28.0`, matching neuriplo's own pin) is read by `cmake/versions.cmake`;
+      `CMakeLists.txt`, CI (`setup-deps`), Docker, and docs all consume that pin
+      instead of hardcoding their own copy.
 
 ## Phase 2 — Close the CLI gaps
 
