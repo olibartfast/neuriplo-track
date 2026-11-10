@@ -17,6 +17,14 @@ target_include_directories(test_mask_overlap PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(test_mask_overlap PRIVATE trackers ${OpenCV_LIBS})
 add_test(NAME mask_overlap COMMAND test_mask_overlap)
 
+# SAM3 detector-prompted loop against a scripted MaskPropagator: needs only
+# the trackers library, no weights and no video.
+add_executable(test_sam3 ${CMAKE_CURRENT_LIST_DIR}/test_sam3.cpp)
+target_compile_options(test_sam3 PRIVATE ${NEURIPLO_TRACK_WARNING_FLAGS})
+target_include_directories(test_sam3 PRIVATE ${CMAKE_CURRENT_LIST_DIR})
+target_link_libraries(test_sam3 PRIVATE trackers ${OpenCV_LIBS})
+add_test(NAME sam3 COMMAND test_sam3)
+
 # The remaining suites compile the application helpers directly, so they are
 # skipped for a library-only build.
 if(NOT BUILD_ONLY_LIB)

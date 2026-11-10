@@ -13,14 +13,14 @@ const std::string CommandLineParser::params =
     "{ source        |        | input video file or stream URL }"
     "{ labels        |        | path to class labels file }"
     "{ weights       |        | path to model weights }"
-    "{ tracker       | SORT   | tracking algorithm (SORT, ByteTrack, BoTSORT, OCSORT, CBIoU) }"
+    "{ tracker       | SORT   | tracking algorithm (SORT, ByteTrack, BoTSORT, OCSORT, CBIoU, SAM3) }"
     "{ classes       |        | comma-separated list of classes to track }"
     "{ tracker_config| trackers/BoTSORT/config/tracker.ini | path to tracker config file }"
     "{ gmc_config    | trackers/BoTSORT/config/gmc.ini     | path to gmc config file }"
     "{ reid_config   | trackers/BoTSORT/config/reid.ini    | path to reid config file }"
     "{ reid_onnx     |        | path to reid onnx file }"
     // Tracker tuning; unset values fall back to the per-algorithm defaults
-    "{ max_age       |        | frames a lost track survives (SORT 1, OCSORT/CBIoU 30) }"
+    "{ max_age       |        | frames a lost track survives (SORT 1, OCSORT/CBIoU/SAM3 30) }"
     "{ min_hits      |        | detections before a track is reported (default 3) }"
     "{ iou_threshold |        | IoU association threshold (default 0.3) }"
     "{ track_buffer  |        | ByteTrack: lost-track buffer length (default 30) }"
@@ -33,6 +33,11 @@ const std::string CommandLineParser::params =
     "{ biou_b1       |        | CBIoU: buffer scale, first matching round (default 0.3) }"
     "{ biou_b2       |        | CBIoU: buffer scale, second matching round (default 0.5) }"
     "{ motion_n      |        | CBIoU: observations averaged by the motion model (default 5) }"
+    "{ sam_presence_thresh |    | SAM3: propagated presence below this is absence (default 0.5) }"
+    "{ sam_det_thresh      |    | SAM3: minimum detection score to prompt the propagator (default 0.5) }"
+    "{ sam_reprompt_iou    |    | SAM3: re-prompt a match agreeing less than this (default 0.5) }"
+    "{ sam_max_objects     |    | SAM3: bound on live objects (default 64) }"
+    "{ sam_model           |    | SAM3: path to the SAM 3.1 export (needs the Group 4 adapter) }"
     "{ mask_iou_weight |      | OCSORT/CBIoU: weight of mask overlap in association, 0-1 (default 0) }"
     "{ use-gpu       | false  | enable GPU support }"
     "{ min_confidence| 0.25   | minimum confidence threshold }"
@@ -189,6 +194,14 @@ void CommandLineParser::parseTrackerOverrides(const cv::CommandLineParser &parse
     readFloat("biou_b2", overrides.cbiou_b2);
     readInt("motion_n", overrides.cbiou_motion_n);
 
+    readFloat("sam_presence_thresh", overrides.sam_presence_thresh);
+    readFloat("sam_det_thresh", overrides.sam_det_thresh);
+    readFloat("sam_reprompt_iou", overrides.sam_reprompt_iou);
+    readInt("sam_max_objects", overrides.sam_max_objects);
+    if (parser.has("sam_model")) {
+        overrides.sam_model = parser.get<std::string>("sam_model");
+    }
+
     readFloat("mask_iou_weight", overrides.mask_iou_weight);
 }
 
@@ -201,7 +214,8 @@ void CommandLineParser::printHelpMessage(const cv::CommandLineParser &parser) {
     std::cout << "    --labels=coco.names --tracker=ByteTrack --classes=person,car\n";
     std::cout << "  ./neuriplo-track --source=video.mp4 --type=yolov8 --weights=model.onnx \\\n";
     std::cout << "    --labels=coco.names --tracker=OCSORT --classes=person --max_age=45 --inertia=0.3\n";
-    std::cout << "\nTrackers: SORT, ByteTrack, BoTSORT, OCSORT (or OC-SORT), CBIoU (or C-BIoU).\n";
+    std::cout << "\nTrackers: SORT, ByteTrack, BoTSORT, OCSORT (or OC-SORT), CBIoU (or C-BIoU),\n"
+                 "  SAM3 (or SAM3.1, SAM-3.1, SAM31; needs the Group 4 propagator adapter).\n";
     std::cout << "Tracker tuning flags left unset take the selected algorithm's default.\n" << std::endl;
 }
 

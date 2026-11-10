@@ -441,7 +441,73 @@ missed frame. No filter, no covariance, no tuning of process noise.
 
 ---
 
-## 6. Algorithm Comparison {#comparison}
+## 6. SAM3 (detector-prompted SAM 3.1 mask propagation) {#sam3}
+
+**Characteristics**:
+- No motion model at all: identity is carried by propagating each object's mask
+- The detector still decides what exists; SAM 3.1 decides where it went
+- Inference lives upstream behind the `MaskPropagator` seam, never in `trackers/`
+- SAM 3.1 weights are gated under the SAM License; none are shipped
+
+### The problem it addresses
+
+Every other tracker here predicts boxes — Kalman filter or displacement mean —
+and all of them lose identity the same way: two objects whose boxes cross,
+merge, or disappear for longer than the model can extrapolate. A video
+segmenter with an appearance memory does not depend on the box geometry staying
+unambiguous, so it addresses exactly the cases the per-frame mask cue could
+not: that cue was never propagated ([mask-association](#mask-association)).
+
+### How it works
+
+Each live object owns a masklet in the propagator. Every frame:
+
+1. **Propagate** all live objects onto the frame; each reports a mask plus a
+   presence (occlusion) score.
+2. **Associate** the present objects to this frame's class-filtered detections
+   (score at least `--sam_det_thresh`) with Hungarian assignment on
+   `1 - IoU`, where IoU is box overlap blended with mask overlap exactly as
+   OC-SORT and C-BIoU do.
+3. **Re-prompt on drift**: a match whose propagated box agrees with its
+   detection less than `--sam_reprompt_iou` feeds the detection back as a
+   correction prompt, keeping the id instead of restarting the object.
+4. **Birth** unmatched detections as new objects up to `--sam_max_objects`
+   (a multiple of the 16-object multiplex bucket); beyond that they are
+   untracked with one warning per run, never a silent eviction.
+5. **Retire** objects without a detection match for more than `--max_age`
+   frames — even ones SAM still reports present. The detector is the arbiter
+   of what exists; SAM is the arbiter of where it is.
+6. **Report** one box per present object with at least `--min_hits`
+   matches, taken from the propagated mask.
+
+Absent objects (presence below `--sam_presence_thresh`) produce no output but
+keep id and memory, so re-appearance after an occlusion resumes the same
+track. This is why the default `max_age` is 30, as for OC-SORT/CBIoU.
+
+### What it is not
+
+- **Not concept-prompted tracking.** SAM 3.1 can run on a text prompt on its
+  own, but then it is a detector, and the detection boundary (one input type,
+  `Detection`, for every tracker) would be bypassed. Prompting from detections
+  keeps `--type`, `--weights` and `--classes` meaning what they mean for every
+  other tracker.
+- **Not McByte.** The `MaskPropagator` seam is the propagation McByte needs;
+  McByte itself — BoT-SORT association with a propagated mask as a cue plus
+  clear-match locking — is a separate tracker.
+- **Not runnable yet.** Inference needs a stateful promptable video
+  segmentation task in `neuriplo-tasks`, which does not exist, so
+  `--tracker=SAM3` fails at startup saying the propagator is unavailable, and
+  the Phase 3 replay path still needs `--source`: like BoTSORT, this tracker
+  reads the frame pixels.
+
+### Costs and limits
+- **Frame required**: unlike the motion trackers, an empty frame is an error.
+- **Capacity is explicit**: `--sam_max_objects` bounds live objects.
+- **Unsupported masklets die**: propagation alone never sustains a track.
+
+---
+
+## 7. Algorithm Comparison {#comparison}
 
 ### Performance Comparison
 
@@ -600,6 +666,12 @@ evaluated on MOT17. Producing comparable numbers is
 - **Frame not required**: like SORT and ByteTrack, they ignore the image
 - **Longer default lifetime**: `max_age` defaults to 30 so a track can survive a gap
 
+#### Mask Propagation (SAM3, gated on the upstream task)
+- **No motion model**: identity rides on propagated masks, not predicted boxes
+- **Tunable from the CLI**: every parameter is exposed as a flag
+- **Frame required**: like BoTSORT, it reads the image; replay needs `--source`
+- **Not runnable yet**: needs the stateful SAM 3.1 task in `neuriplo-tasks` (Group 4)
+
 #### Advanced Integration (BoTSORT)
 - **Full-featured Setup**: Requires ReID model and configuration files
 - **Frame Processing**: Needs input frames for appearance feature extraction
@@ -608,4 +680,4 @@ evaluated on MOT17. Producing comparable numbers is
 
 > **Complete Integration Examples**: See [Code Examples](Code_Examples.md) for detailed implementation patterns, multi-camera setups, and optimization techniques.
 
-This guide provides the conceptual foundation for understanding and choosing between the five tracking algorithms. Each serves different use cases, from high-speed real-time applications through occlusion- and irregular-motion-heavy scenes to accuracy-critical scenarios requiring robust re-identification capabilities.
+This guide provides the conceptual foundation for understanding and choosing between the six tracking algorithms. Each serves different use cases, from high-speed real-time applications through occlusion- and irregular-motion-heavy scenes to accuracy-critical scenarios requiring robust re-identification capabilities.

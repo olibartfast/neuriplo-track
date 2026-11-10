@@ -146,7 +146,23 @@ built on a developer machine records a version it was not built against.
       (clear-match locking around the assignment step) is implementable today.
       StrongSORT would reuse the BoTSORT Re-ID path; it has no row in the
       benchmark table in `docs/Tracking_Algorithms.md`, because the Roboflow
-      suite does not implement it.
+      suite does not implement it. The `MaskPropagator` seam from the SAM 3.1
+      item below is the propagation McByte needs; with a SAM 3.1 task upstream,
+      only its association half remains.
+- [ ] **SAM 3.1 video tracker.** Identity carried by propagating each object's
+      mask with SAM 3.1 (Object Multiplex, 16 objects per bucket) instead of a
+      motion model; the detector still prompts births, so `Detection` stays the
+      only input type. Shipped: the `MaskPropagator` seam (`trackers/common/`),
+      the detector-prompted loop (`trackers/SAM3/` + `Sam3Wrapper`), the
+      `sam_*` CLI flags with per-algorithm defaults, and scripted-propagator
+      tests — all without weights.
+      Deferred to a follow-up: the CLI wiring (Group 4), gated on the stateful
+      promptable video segmentation task in `neuriplo-tasks`, which does not
+      exist yet. Until it lands, `--tracker=SAM3` fails at startup saying the
+      propagator is unavailable (not a null-tracker error), and replay still
+      needs `--source` because the tracker reads frames. Weights are gated and
+      under the SAM License; none are shipped
+      ([2026-10-10-sam3-video-tracker](2026-10-10-sam3-video-tracker/requirements.md)).
 - [ ] **Decide what the mask cue is worth.** Measured for the first time on
       2026-09-22 ([2026-08-20-evaluation](2026-08-20-evaluation/validation.md)):
       the cue changes the tracking result on 43.8% / 56.7% / 71.1% of frames at

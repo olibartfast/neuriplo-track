@@ -23,6 +23,11 @@ set(CBIOU_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/CBIoU/CBIoUTracker.cpp
 )
 
+# Set source files for SAM3 (detector-prompted mask propagation)
+set(SAM3_SOURCES
+    ${CMAKE_CURRENT_LIST_DIR}/SAM3/Sam3Tracker.cpp
+)
+
 # Set source files for BoTSORT
 file(GLOB_RECURSE BOTSORT_SOURCES "${CMAKE_CURRENT_LIST_DIR}/BoTSORT/src/*.cpp")
 
@@ -33,6 +38,7 @@ set(WRAPPER_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/ByteTrackWrapper.cpp
     ${CMAKE_CURRENT_LIST_DIR}/OCSortWrapper.cpp
     ${CMAKE_CURRENT_LIST_DIR}/CBIoUWrapper.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/Sam3Wrapper.cpp
 )
 
 # Create the trackers library
@@ -41,6 +47,7 @@ add_library(trackers SHARED
     ${SORT_SOURCES}
     ${OCSORT_SOURCES}
     ${CBIOU_SOURCES}
+    ${SAM3_SOURCES}
     ${BOTSORT_SOURCES}
     ${WRAPPER_SOURCES}
 )
@@ -49,6 +56,7 @@ set_source_files_properties(
     ${SORT_SOURCES}
     ${OCSORT_SOURCES}
     ${CBIOU_SOURCES}
+    ${SAM3_SOURCES}
     ${WRAPPER_SOURCES}
     PROPERTIES COMPILE_OPTIONS "${NEURIPLO_TRACK_WARNING_FLAGS}"
 )
@@ -67,6 +75,7 @@ target_include_directories(trackers PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/SORT
     ${CMAKE_CURRENT_LIST_DIR}/OCSORT
     ${CMAKE_CURRENT_LIST_DIR}/CBIoU
+    ${CMAKE_CURRENT_LIST_DIR}/SAM3
     ${CMAKE_CURRENT_LIST_DIR}/BoTSORT/include
     ${bytetrack_SOURCE_DIR}/include
     ${OpenCV_INCLUDE_DIRS}

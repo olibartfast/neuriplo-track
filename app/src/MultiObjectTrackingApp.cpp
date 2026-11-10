@@ -341,7 +341,10 @@ void MultiObjectTrackingApp::replayDetections() {
     // a replay whose only output is a MOT file needs no video at all and runs
     // on a machine with no model, no ONNX Runtime session and no GPU.
     const bool renderVideo = shouldWriteVideo(config_);
-    const bool trackerNeedsFrame = canonicalTrackerName(config_.trackingAlgorithm) == "BoTSORT";
+    const std::string algorithm = canonicalTrackerName(config_.trackingAlgorithm);
+    // BoTSORT reads the frame for Re-ID features and SAM3 propagates masks
+    // from its pixels; everything else ignores it.
+    const bool trackerNeedsFrame = algorithm == "BoTSORT" || algorithm == "SAM3";
     const bool needFrames = renderVideo || config_.displayOutput || trackerNeedsFrame;
 
     cv::VideoCapture cap;
@@ -375,9 +378,10 @@ void MultiObjectTrackingApp::replayDetections() {
         const std::vector<neuriplo_tasks::Detection> &detections =
             (found != byFrame.end()) ? found->second : kNoDetections;
 
-        // BoTSORT is the only tracker that reads the frame; everything else
-        // ignores it, so an empty Mat is the correct argument when there is no
-        // video, and a replay of BoTSORT without --source was already rejected.
+        // BoTSORT reads the frame for Re-ID features and SAM3 propagates masks
+        // from its pixels; everything else ignores it, so an empty Mat is the
+        // correct argument when there is no video, and a replay of either
+        // without --source was already rejected.
         auto tracks = tracker_->update(detections, needFrames ? frame : cv::Mat());
 
         if (motWriter) {
@@ -463,6 +467,15 @@ std::unique_ptr<BaseTracker> MultiObjectTrackingApp::createTracker(const std::st
         return std::make_unique<OCSortWrapper>(config);
     } else if (algorithm == "CBIoU") {
         return std::make_unique<CBIoUWrapper>(config);
+    } else if (algorithm == "SAM3") {
+        // Group 4 of the SAM 3.1 packet: no MaskPropagator exists yet, because
+        // the upstream stateful video segmentation task has not landed. Throw
+        // here so the failure names the missing piece instead of looking like
+        // an unknown tracker name falling through to null.
+        throw std::runtime_error(
+            "SAM3 tracking is unavailable in this build: it needs a MaskPropagator backed by the upstream SAM 3.1 "
+            "video segmentation task, which has not landed yet "
+            "(specs/2026-10-10-sam3-video-tracker/plan.md Group 4)");
     }
 
     return nullptr;

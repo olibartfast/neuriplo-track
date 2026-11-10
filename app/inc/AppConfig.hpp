@@ -24,6 +24,12 @@ struct TrackerOverrides {
     std::optional<float> cbiou_b2;
     std::optional<int> cbiou_motion_n;
 
+    std::optional<float> sam_presence_thresh;
+    std::optional<float> sam_det_thresh;
+    std::optional<float> sam_reprompt_iou;
+    std::optional<int> sam_max_objects;
+    std::optional<std::string> sam_model;
+
     std::optional<float> mask_iou_weight;
 };
 

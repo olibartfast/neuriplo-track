@@ -32,6 +32,13 @@ void testCanonicalNames() {
     CHECK(canonicalTrackerName("C-BIoU") == "CBIoU");
     CHECK(canonicalTrackerName("cbiou") == "CBIoU");
 
+    // SAM 3.1 spellings; dots are separators like dashes and underscores.
+    CHECK(canonicalTrackerName("SAM3") == "SAM3");
+    CHECK(canonicalTrackerName("sam3") == "SAM3");
+    CHECK(canonicalTrackerName("SAM3.1") == "SAM3");
+    CHECK(canonicalTrackerName("SAM-3.1") == "SAM3");
+    CHECK(canonicalTrackerName("SAM31") == "SAM3");
+
     CHECK(canonicalTrackerName("DeepSORT").empty());
     CHECK(canonicalTrackerName("").empty());
 }
@@ -55,7 +62,7 @@ void testExistingTrackerDefaults() {
 
     // The mask cue is off unless asked for, for every tracker.
     for (const std::string &name : {std::string("SORT"), std::string("ByteTrack"), std::string("BoTSORT"),
-                                    std::string("OCSORT"), std::string("CBIoU")}) {
+                                    std::string("OCSORT"), std::string("CBIoU"), std::string("SAM3")}) {
         CHECK_LABELED(std::fabs(makeTrackConfig(configFor(name)).mask_iou_weight) < 1e-6f, name);
     }
 }
@@ -79,6 +86,19 @@ void testNewTrackerDefaults() {
         CHECK_LABELED(std::fabs(config.cbiou_b2 - 0.5f) < 1e-6f, name);
         CHECK_LABELED(config.cbiou_motion_n == 5, name);
     }
+
+    for (const std::string &name :
+         {std::string("SAM3"), std::string("sam3"), std::string("SAM3.1"), std::string("SAM31")}) {
+        const TrackConfig config = makeTrackConfig(configFor(name));
+        CHECK_LABELED(config.max_age == 30, name);
+        CHECK_LABELED(config.min_hits == 3, name);
+        CHECK_LABELED(std::fabs(config.iou_threshold - 0.3f) < 1e-6f, name);
+        CHECK_LABELED(std::fabs(config.sam_presence_thresh - 0.5f) < 1e-6f, name);
+        CHECK_LABELED(std::fabs(config.sam_det_thresh - 0.5f) < 1e-6f, name);
+        CHECK_LABELED(std::fabs(config.sam_reprompt_iou - 0.5f) < 1e-6f, name);
+        CHECK_LABELED(config.sam_max_objects == 64, name);
+        CHECK_LABELED(config.sam_model_path.empty(), name);
+    }
 }
 
 // Anything given on the command line wins over the algorithm default.
@@ -97,6 +117,11 @@ void testOverridesWin() {
     config.trackerOverrides.cbiou_b1 = 0.2f;
     config.trackerOverrides.cbiou_b2 = 0.8f;
     config.trackerOverrides.cbiou_motion_n = 9;
+    config.trackerOverrides.sam_presence_thresh = 0.7f;
+    config.trackerOverrides.sam_det_thresh = 0.4f;
+    config.trackerOverrides.sam_reprompt_iou = 0.6f;
+    config.trackerOverrides.sam_max_objects = 32;
+    config.trackerOverrides.sam_model = "sam31.onnx";
     config.trackerOverrides.mask_iou_weight = 0.75f;
 
     const TrackConfig resolved = makeTrackConfig(config);
@@ -113,6 +138,11 @@ void testOverridesWin() {
     CHECK_NEAR(resolved.cbiou_b1, 0.2f, 1e-6f);
     CHECK_NEAR(resolved.cbiou_b2, 0.8f, 1e-6f);
     CHECK_EQ(resolved.cbiou_motion_n, 9);
+    CHECK_NEAR(resolved.sam_presence_thresh, 0.7f, 1e-6f);
+    CHECK_NEAR(resolved.sam_det_thresh, 0.4f, 1e-6f);
+    CHECK_NEAR(resolved.sam_reprompt_iou, 0.6f, 1e-6f);
+    CHECK_EQ(resolved.sam_max_objects, 32);
+    CHECK(resolved.sam_model_path == "sam31.onnx");
     CHECK_NEAR(resolved.mask_iou_weight, 0.75f, 1e-6f);
 }
 
@@ -179,6 +209,22 @@ void testOverrideValidation() {
     TrackerOverrides bad_motion;
     bad_motion.cbiou_motion_n = 0;
     CHECK(rejects(bad_motion, "--motion_n"));
+
+    TrackerOverrides bad_presence;
+    bad_presence.sam_presence_thresh = 1.5f;
+    CHECK(rejects(bad_presence, "--sam_presence_thresh"));
+
+    TrackerOverrides bad_sam_det;
+    bad_sam_det.sam_det_thresh = -0.1f;
+    CHECK(rejects(bad_sam_det, "--sam_det_thresh"));
+
+    TrackerOverrides bad_reprompt;
+    bad_reprompt.sam_reprompt_iou = 2.0f;
+    CHECK(rejects(bad_reprompt, "--sam_reprompt_iou"));
+
+    TrackerOverrides bad_capacity;
+    bad_capacity.sam_max_objects = 0;
+    CHECK(rejects(bad_capacity, "--sam_max_objects"));
 
     // b1 > b2 is unusual but legal: the cascade still runs.
     TrackerOverrides reversed_buffers;

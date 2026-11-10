@@ -77,6 +77,8 @@ ONNX Runtime headers/libs are validated at configure time; the CUDA provider
 | OC-SORT | `trackers/OCSORT/` | In-tree, from [arXiv 2203.14360](https://arxiv.org/abs/2203.14360); observation-centric re-update, momentum-weighted association, last-observation recovery. Reuses `HungarianAlgorithm` and `cv::KalmanFilter` |
 | Mask overlap | `trackers/common/` | Binary-mask IoU used as an optional association cue by OC-SORT and C-BIoU; consumes `neuriplo_tasks::InstanceSegmentation` masks |
 | C-BIoU | `trackers/CBIoU/` | In-tree, from [arXiv 2211.14317](https://arxiv.org/abs/2211.14317); buffered IoU, two-round cascaded matching, mean-displacement motion model (no Kalman filter) |
+| MaskPropagator seam | `trackers/common/MaskPropagator.hpp` | Abstract inference seam (propagate / add / re-prompt / remove / capacity) so mask inference lives upstream, never in `trackers/` |
+| SAM3 | `trackers/SAM3/`, `include/Sam3Wrapper.hpp` | Detector-prompted SAM 3.1 loop over the seam; CLI wiring gated on the upstream stateful video segmentation task (Group 4) |
 | ByteTrack | fetched | Adapted through `ByteTrackWrapper` |
 
 BoTSORT is configured through INI files in `trackers/BoTSORT/config/`:
@@ -120,7 +122,7 @@ scripts/       setup_dependencies.sh, mot_docker_cpu.sh, eval_mot.py,
 | Type | Header | Role |
 |------|--------|------|
 | `BaseTracker` | `include/BaseTracker.hpp` | Abstract interface; `update(detections, frame)` → `TrackedObject` |
-| `TrackConfig` | `include/TrackConfig.hpp` | Per-tracker parameters (SORT age/hits/IoU, ByteTrack buffer/thresholds, BoTSORT config paths) |
+| `TrackConfig` | `include/TrackConfig.hpp` | Per-tracker parameters (SORT age/hits/IoU, ByteTrack buffer/thresholds, OC-SORT delta/inertia/det, C-BIoU buffers/motion, SAM3 presence/det/reprompt/capacity/model, BoTSORT config paths) |
 | `TrackedObject` | `include/TrackedObject.hpp` | Tracker output |
 | `AppConfig` | `app/inc/AppConfig.hpp` | CLI-level config (source, weights, backend settings, output) |
 | `neuriplo_tasks::Detection` | fetched | Detection type flowing into every tracker |
@@ -156,12 +158,14 @@ Details in [`DOCKER.md`](../DOCKER.md).
 ```bash
 ./neuriplo-track \
   --type=<model_type> --source=<video|stream> --labels=<labels_file> \
-  --weights=<model> --tracker=<SORT|ByteTrack|BoTSORT|OCSORT|CBIoU> --classes=<a,b> \
+  --weights=<model> --tracker=<SORT|ByteTrack|BoTSORT|OCSORT|CBIoU|SAM3> --classes=<a,b> \
   [--use-gpu] [--output=<path>] [--display]
 ```
 
 BoTSORT additionally needs `--tracker_config` and `--reid_onnx`, and usually
-`--gmc_config` / `--reid_config`.
+`--gmc_config` / `--reid_config`. SAM3 additionally needs `--sam_model`, and
+until the Group 4 propagator adapter lands it fails at startup saying the
+propagator is unavailable.
 
 Evaluation flags: `--mot_output <file>` (tracking results, MOTChallenge
 format), `--save_detections <file>` (the detections the tracker saw, `id = -1`,

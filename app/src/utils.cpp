@@ -48,11 +48,12 @@ std::string generateOutputPath(const std::string &inputPath) {
 
 std::string canonicalTrackerName(const std::string &trackingAlgorithm) {
     // Compare ignoring case and the separators used by the papers' spellings,
-    // so "OC-SORT", "OCSORT" and "ocsort" all name the same tracker.
+    // so "OC-SORT", "OCSORT" and "ocsort" all name the same tracker. Dots are
+    // separators too, so "SAM3.1" and "SAM-3.1" resolve like "SAM31" does.
     std::string key;
     key.reserve(trackingAlgorithm.size());
     for (const char c : trackingAlgorithm) {
-        if (c == '-' || c == '_' || c == ' ') {
+        if (c == '-' || c == '_' || c == ' ' || c == '.') {
             continue;
         }
         key.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
@@ -72,6 +73,9 @@ std::string canonicalTrackerName(const std::string &trackingAlgorithm) {
     }
     if (key == "cbiou") {
         return "CBIoU";
+    }
+    if (key == "sam3" || key == "sam31") {
+        return "SAM3";
     }
     return "";
 }
@@ -108,6 +112,10 @@ std::optional<std::string> validateTrackerOverrides(const TrackerOverrides &over
         outsideRange("biou_b1", overrides.cbiou_b1, 0.0f, 5.0f),
         outsideRange("biou_b2", overrides.cbiou_b2, 0.0f, 5.0f),
         belowMinimum("motion_n", overrides.cbiou_motion_n, 1),
+        outsideRange("sam_presence_thresh", overrides.sam_presence_thresh, 0.0f, 1.0f),
+        outsideRange("sam_det_thresh", overrides.sam_det_thresh, 0.0f, 1.0f),
+        outsideRange("sam_reprompt_iou", overrides.sam_reprompt_iou, 0.0f, 1.0f),
+        belowMinimum("sam_max_objects", overrides.sam_max_objects, 1),
     };
 
     for (const auto &problem : problems) {
@@ -132,9 +140,11 @@ TrackConfig makeTrackConfig(const AppConfig &config) {
 
     // OC-SORT and C-BIoU are built around recovering a track across a gap, which
     // the shared TrackConfig default of max_age = 1 would make impossible. Their
-    // paper defaults apply unless the command line says otherwise.
+    // paper defaults apply unless the command line says otherwise. SAM3 shares
+    // the gap-recovery shape (absence is its occlusion signal), so it takes the
+    // same lifetime.
     const std::string algorithm = canonicalTrackerName(config.trackingAlgorithm);
-    if (algorithm == "OCSORT" || algorithm == "CBIoU") {
+    if (algorithm == "OCSORT" || algorithm == "CBIoU" || algorithm == "SAM3") {
         trackConfig.max_age = 30;
         trackConfig.min_hits = 3;
         trackConfig.iou_threshold = 0.3f;
@@ -180,6 +190,21 @@ TrackConfig makeTrackConfig(const AppConfig &config) {
     if (overrides.cbiou_motion_n) {
         trackConfig.cbiou_motion_n = *overrides.cbiou_motion_n;
     }
+    if (overrides.sam_presence_thresh) {
+        trackConfig.sam_presence_thresh = *overrides.sam_presence_thresh;
+    }
+    if (overrides.sam_det_thresh) {
+        trackConfig.sam_det_thresh = *overrides.sam_det_thresh;
+    }
+    if (overrides.sam_reprompt_iou) {
+        trackConfig.sam_reprompt_iou = *overrides.sam_reprompt_iou;
+    }
+    if (overrides.sam_max_objects) {
+        trackConfig.sam_max_objects = *overrides.sam_max_objects;
+    }
+    if (overrides.sam_model) {
+        trackConfig.sam_model_path = *overrides.sam_model;
+    }
     if (overrides.mask_iou_weight) {
         trackConfig.mask_iou_weight = *overrides.mask_iou_weight;
     }
@@ -222,6 +247,9 @@ std::optional<std::string> validateEvaluationOptions(const AppConfig &config) {
         }
         if (canonicalTrackerName(config.trackingAlgorithm) == "BoTSORT" && config.source.empty()) {
             return "BoTSORT extracts Re-ID features from the frame, so replaying it also needs --source.";
+        }
+        if (canonicalTrackerName(config.trackingAlgorithm) == "SAM3" && config.source.empty()) {
+            return "SAM3 propagates masks from the frame pixels, so replaying it also needs --source.";
         }
         return std::nullopt;
     }

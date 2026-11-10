@@ -37,6 +37,21 @@ struct TrackConfig {
     // Only has an effect when the detector is a segmentation model.
     float mask_iou_weight = 0.0f;
 
+    // SAM3 parameters (specs/2026-10-10-sam3-video-tracker/requirements.md).
+    // presence_thresh: propagated objects below this presence are absent.
+    // det_thresh: detections below this score never prompt the propagator.
+    // reprompt_iou: a matched pair agreeing less than this is fed back as a
+    //   correction prompt, keeping the id.
+    // max_objects: bound on live objects, a multiple of the 16-object
+    //   multiplex bucket; non-positive means the propagator's own capacity.
+    // model_path: SAM 3.1 export consumed by the app-side propagator adapter
+    //   (Group 4); unset until that adapter exists.
+    float sam_presence_thresh = 0.5f;
+    float sam_det_thresh = 0.5f;
+    float sam_reprompt_iou = 0.5f;
+    int sam_max_objects = 64;
+    std::string sam_model_path;
+
     // BoTSORT parameters
     std::string tracker_config_path;
     std::string gmc_config_path;

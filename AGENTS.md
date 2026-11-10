@@ -56,12 +56,13 @@ Optional flags: `BUILD_ONLY_LIB=ON` (trackers library only), `WERROR=ON` (strict
   trackers over one capture; `scripts/eval_mot.py` scores one against ground
   truth.
 - **Mask cue** (`trackers/common/MaskOverlap.hpp`): mask IoU blended into association by `TrackConfig::mask_iou_weight` (`--mask_iou_weight`), implemented in OC-SORT and C-BIoU. Not McByte: masks are per-frame, never propagated.
-- **Wrappers** (`include/*Wrapper.hpp`, `trackers/*Wrapper.cpp`): adapt SORT, ByteTrack, BoTSORT, OC-SORT, and C-BIoU to the common interface.
-- **TrackConfig** (`include/TrackConfig.hpp`): classes to track, IoU/age thresholds, per-algorithm parameters (ByteTrack, OC-SORT, C-BIoU), BoTSORT config paths (tracker.ini, gmc.ini, reid.ini, reid ONNX).
-- **makeTrackConfig / canonicalTrackerName** (`app/src/utils.cpp`): resolve `AppConfig` + CLI overrides into a `TrackConfig`, applying per-algorithm defaults; `--tracker` accepts `OC-SORT`/`C-BIoU` spellings.
+- **Mask propagation seam** (`trackers/common/MaskPropagator.hpp`): abstract inference seam (`propagate` / `addObject` / `reprompt` / `removeObject` / `capacity`) behind which the SAM3 tracker loop (`trackers/SAM3/`) runs; a scripted double in `tests/` covers the loop with no weights.
+- **Wrappers** (`include/*Wrapper.hpp`, `trackers/*Wrapper.cpp`): adapt SORT, ByteTrack, BoTSORT, OC-SORT, C-BIoU, and SAM3 to the common interface.
+- **TrackConfig** (`include/TrackConfig.hpp`): classes to track, IoU/age thresholds, per-algorithm parameters (ByteTrack, OC-SORT, C-BIoU, SAM3), BoTSORT config paths (tracker.ini, gmc.ini, reid.ini, reid ONNX).
+- **makeTrackConfig / canonicalTrackerName** (`app/src/utils.cpp`): resolve `AppConfig` + CLI overrides into a `TrackConfig`, applying per-algorithm defaults; `--tracker` accepts `OC-SORT`/`C-BIoU`/`SAM3.1` spellings.
 - **MultiObjectTrackingApp** (`app/`): wires detector (`neuriplo_tasks::TaskFactory`), inference engine, and tracker; tracker creation lives in `MultiObjectTrackingApp::createTracker`.
 
-BoTSORT requires a frame for Re-ID features; SORT, ByteTrack, OC-SORT, and C-BIoU do not.
+BoTSORT requires a frame for Re-ID features and SAM3 for mask propagation; SORT, ByteTrack, OC-SORT, and C-BIoU do not. `--tracker=SAM3` is not runnable yet: it needs the upstream SAM 3.1 task (Group 4), so `createTracker` throws saying the propagator is unavailable.
 
 ## Code Conventions
 

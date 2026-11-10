@@ -3,11 +3,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/std/the-standard)
 
-C++ framework for multi-object tracking, integrating state-of-the-art tracking algorithms (SORT, ByteTrack, BoTSORT, OC-SORT, C-BIoU) with the [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks) and [neuriplo](https://github.com/olibartfast/neuriplo) libraries for real-time object detection and tracking.
+C++ framework for multi-object tracking, integrating state-of-the-art tracking algorithms (SORT, ByteTrack, BoTSORT, OC-SORT, C-BIoU, SAM 3.1 mask propagation) with the [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks) and [neuriplo](https://github.com/olibartfast/neuriplo) libraries for real-time object detection and tracking.
 
 ## Key Features
 
-- **Multiple Tracking Algorithms**: SORT, ByteTrack, BoTSORT, OC-SORT, and C-BIoU
+- **Multiple Tracking Algorithms**: SORT, ByteTrack, BoTSORT, OC-SORT, C-BIoU, and SAM3 (detector-prompted SAM 3.1 mask propagation; CLI wiring gated on the upstream task, see below)
 - **Mask-Conditioned Association**: with a segmentation model, OC-SORT and C-BIoU can associate on mask overlap instead of box overlap
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, LibTorch, OpenVINO (via [neuriplo](https://github.com/olibartfast/neuriplo))
 - **Multiple Detection Models**: YOLO series (v4->26), RT-DETR, D-FINE, and more
@@ -94,7 +94,7 @@ See [neuriplo documentation](https://github.com/olibartfast/neuriplo) for backen
 - `--source`: Input video file or stream URL
 - `--labels`: Path to class labels file
 - `--weights`: Path to model weights
-- `--tracker`: Tracking algorithm (`SORT`, `ByteTrack`, `BoTSORT`, `OCSORT`, `CBIoU`; the paper spellings `OC-SORT` and `C-BIoU` are accepted too)
+- `--tracker`: Tracking algorithm (`SORT`, `ByteTrack`, `BoTSORT`, `OCSORT`, `CBIoU`, `SAM3`; the paper spellings `OC-SORT`, `C-BIoU`, `SAM3.1`, `SAM-3.1` and `SAM31` are accepted too)
 - `--classes`: Comma-separated list of classes to track (e.g., "person,car")
 
 #### Optional Parameters
@@ -126,7 +126,7 @@ See [neuriplo documentation](https://github.com/olibartfast/neuriplo) for backen
   machine with no ONNX Runtime and no GPU. `--weights`, `--type`,
   `--save_detections` and `--mask_iou_weight` are rejected on this path rather
   than silently ignored; `--source` is needed only to render, to display, or
-  for BoTSORT's Re-ID features.
+  for BoTSORT's Re-ID features and SAM3's mask propagation.
 
 See [Evaluating and comparing trackers](#evaluating-and-comparing-trackers).
 
@@ -137,9 +137,9 @@ tracker named by `--tracker`.
 
 | Flag | Applies to | Default | Meaning |
 |------|------------|---------|---------|
-| `--max_age` | SORT, OCSORT, CBIoU | 1 (SORT), 30 (OCSORT/CBIoU) | Frames a track survives without a matching detection |
-| `--min_hits` | SORT, OCSORT, CBIoU | 3 | Detections before a track is reported |
-| `--iou_threshold` | SORT, OCSORT, CBIoU | 0.3 | Minimum overlap for an association |
+| `--max_age` | SORT, OCSORT, CBIoU, SAM3 | 1 (SORT), 30 (OCSORT/CBIoU/SAM3) | Frames a track survives without a matching detection |
+| `--min_hits` | SORT, OCSORT, CBIoU, SAM3 | 3 | Detections before a track is reported |
+| `--iou_threshold` | SORT, OCSORT, CBIoU, SAM3 | 0.3 | Minimum overlap for an association |
 | `--track_buffer` | ByteTrack | 30 | Frames a lost track is buffered |
 | `--track_thresh` | ByteTrack | 0.5 | High/low detection split |
 | `--high_thresh` | ByteTrack | 0.6 | Score required to start a track |
@@ -150,6 +150,11 @@ tracker named by `--tracker`.
 | `--biou_b1` | CBIoU | 0.3 | Buffer scale for the first matching round |
 | `--biou_b2` | CBIoU | 0.5 | Buffer scale for the second round |
 | `--motion_n` | CBIoU | 5 | Observations averaged by the motion model |
+| `--sam_presence_thresh` | SAM3 | 0.5 | Propagated objects below this presence are absent (kept, not reported) |
+| `--sam_det_thresh` | SAM3 | 0.5 | Minimum detection score to prompt the propagator |
+| `--sam_reprompt_iou` | SAM3 | 0.5 | Re-prompt a match agreeing less than this, keeping the id |
+| `--sam_max_objects` | SAM3 | 64 | Bound on live objects (multiple of the 16-object bucket) |
+| `--sam_model` | SAM3 | | Path to the SAM 3.1 export (needs the Group 4 propagator adapter) |
 | `--mask_iou_weight` | OCSORT, CBIoU | 0 | Weight of mask overlap in association, 0–1. Needs a segmentation model; see [mask-conditioned association](docs/Tracking_Algorithms.md#mask-association) |
 
 ### Examples
@@ -216,6 +221,27 @@ tracker named by `--tracker`.
   --classes=person,sports\ ball \
   --biou_b1=0.4 \
   --biou_b2=0.7
+```
+
+#### SAM3 mask propagation (needs the upstream SAM 3.1 task, Group 4)
+
+`--tracker=SAM3` carries identity by propagating each object's mask instead of
+a motion model; the detector still prompts births. Inference needs a stateful
+promptable video segmentation task in `neuriplo-tasks`, which does not exist
+yet, so this fails at startup with a message saying the propagator is
+unavailable. SAM 3.1 weights are gated on Hugging Face (`facebook/sam3.1`)
+under the SAM License (not OSI-approved); none are shipped, downloaded, or
+converted here — `--sam_model` takes a path you provide.
+
+```bash
+./neuriplo-track \
+  --type=yolo \
+  --source=video.mp4 \
+  --labels=coco.names \
+  --weights=yolov8n.onnx \
+  --tracker=SAM3 \
+  --classes=person \
+  --sam_model=models/sam31.onnx
 ```
 
 #### Segmentation model with the mask cue
