@@ -47,6 +47,31 @@ if(NOT BUILD_ONLY_LIB)
     )
     add_test(NAME mot_file COMMAND test_mot_file)
 
+    # Evaluation flag combinations: pure functions, no process and no video.
+    add_executable(test_eval_options
+        ${CMAKE_CURRENT_LIST_DIR}/test_eval_options.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/../app/src/utils.cpp
+    )
+    target_compile_options(test_eval_options PRIVATE ${NEURIPLO_TRACK_WARNING_FLAGS})
+    target_include_directories(test_eval_options PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_LIST_DIR}/../app/inc
+        ${CMAKE_CURRENT_LIST_DIR}/../include
+        ${OpenCV_INCLUDE_DIRS}
+    )
+    target_link_libraries(test_eval_options PRIVATE ${OpenCV_LIBS} glog::glog)
+    add_test(NAME eval_options COMMAND test_eval_options)
+
+    # The replay path end to end, driven through the real binary: no model, no
+    # inference engine, no backend and no video are involved, so this runs
+    # anywhere the unit suites do.
+    add_test(NAME replay
+        COMMAND ${CMAKE_COMMAND}
+            -DAPP=$<TARGET_FILE:neuriplo-track>
+            -DWORKDIR=${CMAKE_CURRENT_BINARY_DIR}/replay
+            -P ${CMAKE_CURRENT_LIST_DIR}/replay_determinism.cmake
+    )
+
     add_executable(test_utils
         ${CMAKE_CURRENT_LIST_DIR}/test_utils.cpp
         ${CMAKE_CURRENT_LIST_DIR}/../app/src/utils.cpp

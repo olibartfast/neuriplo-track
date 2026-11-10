@@ -5,9 +5,10 @@
 2. [MOTChallenge: The Reference Benchmark](#motchallenge)
 3. [Datasets and Benchmarks 2025](#datasets-2025)
 4. [Evaluation Metrics](#metrics)
-5. [Technical Challenges](#challenges)
-6. [Practical Usage](#practical-usage)
-7. [Conclusions and Future Developments](#conclusions)
+5. [Evaluating trackers in this repository](#evaluating-here)
+6. [Technical Challenges](#challenges)
+7. [Practical Usage](#practical-usage)
+8. [Conclusions and Future Developments](#conclusions)
 
 ## Related Documentation
 - **[Tracking Algorithms Implementation Guide](Tracking_Algorithms.md)** - Detailed implementation of SORT, BoTSORT, and ByteTrack algorithms
@@ -347,7 +348,84 @@ struct TrackingMetrics {
 
 ---
 
-## 5. Technical Challenges {#challenges}
+## 5. Evaluating trackers in this repository {#evaluating-here}
+
+Everything above describes the field's metrics. This section is about what this
+repository actually computes, and -- more importantly -- what it does not.
+
+### The workflow
+
+```bash
+# 1. Run the detector once and capture what the tracker saw.
+neuriplo-track --source=clip.mp4 --type=yolov8 --weights=m.onnx \
+    --labels=coco.names --classes=person --save_detections=det.txt
+
+# 2. Replay those detections through every tracker.
+scripts/compare_trackers.sh --detections=det.txt
+
+# 3. With ground truth, score one run.
+neuriplo-track --detections=det.txt --tracker=OCSORT --mot_output=tracks.txt
+python3 scripts/eval_mot.py --gt=gt.txt --tracker-output=tracks.txt
+```
+
+Step 2 is the point: a detector is expensive and non-deterministic to re-run,
+so it runs once and every tracker sees byte-identical input. Replay is verified
+to reproduce a live run exactly -- capturing and replaying the same clip through
+the same tracker yields identical MOT output -- which is what makes a
+tracker-to-tracker difference attributable to the tracker.
+
+### What the numbers are
+
+`scripts/eval_mot.py` reports MOTA, MOTP, IDF1, IDP, IDR, precision, recall,
+MT/PT/ML, FP, FN, IDsw and FM, via
+[py-motmetrics](https://github.com/cheind/py-motmetrics).
+
+**They are a regression signal for this repository, not MOTChallenge results.**
+The harness does not handle distractor classes, does not use the visibility
+column, and does not apply the benchmark's preprocessing. Comparing a figure
+from here to a published leaderboard number is meaningless, and the tool prints
+that warning above every summary so a figure cannot be quoted without it.
+
+### HOTA
+
+Not computed here. HOTA needs
+[TrackEval](https://github.com/JonathonLuiten/TrackEval), which consumes exactly
+the MOTChallenge files this repository writes. The route is therefore: produce
+the MOT output with `--mot_output`, then point TrackEval at it. Adding a second
+implementation of a metric that a maintained reference tool already computes
+would be a liability, not a feature.
+
+### Without ground truth
+
+Labels are usually the thing you do not have. `compare_trackers.sh` still emits
+descriptive counts computed from the MOT output alone -- distinct track ids,
+mean rows per id, most tracks in any one frame -- and labels them as counts
+rather than accuracy. They are enough to see fragmentation:
+
+```
+TRACKER        TRACKS   MEAN_LEN   MAX_CONC     STATUS
+------------ -------- ---------- ---------- ----------
+SORT               13        4.1          1         ok
+ByteTrack           2       34.5          1         ok
+OCSORT              2        4.5          1         ok
+CBIoU               5       20.6          2         ok
+BoTSORT             2       22.5          1         ok
+```
+
+Thirteen ids against two, over the same 122 detections, is a fragmentation
+signal. It is *not* a statement that ByteTrack is more accurate: a tracker that
+holds one id across two different people scores well on this column and badly
+on IDF1. Read these counts as a question to investigate, never as a verdict.
+
+### The vendored evaluator
+
+`trackers/BoTSORT/src/mot_metrics_evaluator.py` predates this harness, computes
+similar numbers, and is reachable from no project workflow. It is superseded by
+`scripts/eval_mot.py` and deliberately left untouched.
+
+---
+
+## 6. Technical Challenges {#challenges}
 
 ### 5.1 Occlusions
 
@@ -423,7 +501,7 @@ class GlobalMotionCompensation {
 
 ---
 
-## 6. Practical Usage {#practical-usage}
+## 7. Practical Usage {#practical-usage}
 
 ### 6.1 Compilation
 
@@ -505,7 +583,7 @@ int main() {
 
 ---
 
-## 7. Conclusions and Future Developments {#conclusions}
+## 8. Conclusions and Future Developments {#conclusions}
 
 ### 7.1 State of the Art 2025
 
