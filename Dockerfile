@@ -1,6 +1,12 @@
 # Multi-stage Dockerfile for Multi-Object Tracking Project
 # Stage 1: Build environment
-FROM nvidia/cuda:12.2.0-devel-ubuntu22.04 AS builder
+FROM nvidia/cuda:13.4.1-devel-ubuntu24.04 AS builder
+
+# ONNX Runtime pin. Keep in sync with ONNXRUNTIME_VERSION in versions.env
+# (matches neuriplo's own pin). Since 1.28 the GPU build is published per
+# CUDA major as onnxruntime-linux-x64-gpu_cuda<MAJOR>-<ver>.
+ARG ONNXRUNTIME_VERSION=1.28.0
+ARG ONNXRUNTIME_GPU_ARCHIVE=onnxruntime-linux-x64-gpu_cuda13-1.28.0
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -21,10 +27,10 @@ RUN apt-get update && apt-get install -y \
 
 # Install ONNX Runtime with GPU support
 WORKDIR /tmp
-RUN wget https://github.com/microsoft/onnxruntime/releases/download/v1.19.2/onnxruntime-linux-x64-gpu-1.19.2.tgz \
-    && tar -xzf onnxruntime-linux-x64-gpu-1.19.2.tgz \
-    && mv onnxruntime-linux-x64-gpu-1.19.2 /opt/onnxruntime \
-    && rm onnxruntime-linux-x64-gpu-1.19.2.tgz
+RUN wget https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/${ONNXRUNTIME_GPU_ARCHIVE}.tgz \
+    && tar -xzf ${ONNXRUNTIME_GPU_ARCHIVE}.tgz \
+    && mv ${ONNXRUNTIME_GPU_ARCHIVE} /opt/onnxruntime \
+    && rm ${ONNXRUNTIME_GPU_ARCHIVE}.tgz
 
 # Set environment variables for ONNX Runtime
 ENV ONNXRUNTIME_DIR=/opt/onnxruntime
@@ -42,19 +48,19 @@ RUN rm -rf build && \
     && cmake --build build --config Release
 
 # Stage 2: Runtime environment
-FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
+FROM nvidia/cuda:13.4.1-runtime-ubuntu24.04
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install runtime dependencies
+# Install runtime dependencies (Ubuntu 24.04 t64 package names)
 RUN apt-get update && apt-get install -y \
-    libopencv-core4.5d \
-    libopencv-imgproc4.5d \
-    libopencv-highgui4.5d \
-    libopencv-video4.5d \
-    libopencv-videoio4.5d \
-    libgoogle-glog0v5 \
+    libopencv-core406t64 \
+    libopencv-imgproc406t64 \
+    libopencv-highgui406t64 \
+    libopencv-video406t64 \
+    libopencv-videoio406t64 \
+    libgoogle-glog0v6t64 \
     libeigen3-dev \
     && rm -rf /var/lib/apt/lists/*
 

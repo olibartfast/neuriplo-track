@@ -55,8 +55,12 @@ message(STATUS "✓ Eigen3 found")
 # Fetch external dependencies and runtime requirements
 include(FetchContent)
 
-# ONNX Runtime setup - Use environment variable or download
-set(ONNXRUNTIME_VERSION "1.19.2")
+# ONNX Runtime setup - Use environment variable or download.
+# ONNXRUNTIME_VERSION comes from versions.env via cmake/versions.cmake; every
+# other consumer (CI, Docker, docs) reads the same pin.
+if(NOT DEFINED ONNXRUNTIME_VERSION OR ONNXRUNTIME_VERSION STREQUAL "")
+    message(FATAL_ERROR "ONNXRUNTIME_VERSION is not set. Check versions.env and cmake/versions.cmake.")
+endif()
 
 # Check if ONNX_RUNTIME_DIR is set via environment
 if(DEFINED ENV{ONNX_RUNTIME_DIR})
@@ -74,25 +78,55 @@ else()
     
     # Download if not exists
     if(NOT EXISTS "${ONNXRUNTIME_DIR}")
-        message(STATUS "Downloading ONNX Runtime ${ONNXRUNTIME_VERSION}...")
-        file(DOWNLOAD
-            "https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/onnxruntime-linux-x64-gpu-${ONNXRUNTIME_VERSION}.tgz"
-            "${CMAKE_BINARY_DIR}/onnxruntime.tgz"
-            SHOW_PROGRESS
-            STATUS DOWNLOAD_STATUS
+        # Since 1.28 the GPU build is published per CUDA major
+        # (onnxruntime-linux-x64-gpu_cuda<MAJOR>-<ver>); older releases use the
+        # legacy onnxruntime-linux-x64-gpu-<ver> name. Try each in turn and
+        # normalize the extracted directory to ONNXRUNTIME_DIR.
+        set(ONNXRUNTIME_GPU_CANDIDATES
+            "onnxruntime-linux-x64-gpu_cuda13-${ONNXRUNTIME_VERSION}"
+            "onnxruntime-linux-x64-gpu_cuda12-${ONNXRUNTIME_VERSION}"
+            "onnxruntime-linux-x64-gpu-${ONNXRUNTIME_VERSION}"
         )
-        
-        list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
-        if(NOT STATUS_CODE EQUAL 0)
-            message(FATAL_ERROR "Failed to download ONNX Runtime")
+        set(ONNXRUNTIME_DOWNLOADED FALSE)
+        foreach(CANDIDATE IN LISTS ONNXRUNTIME_GPU_CANDIDATES)
+            message(STATUS "Downloading ONNX Runtime ${ONNXRUNTIME_VERSION} (${CANDIDATE})...")
+            file(DOWNLOAD
+                "https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/${CANDIDATE}.tgz"
+                "${CMAKE_BINARY_DIR}/onnxruntime.tgz"
+                SHOW_PROGRESS
+                STATUS DOWNLOAD_STATUS
+            )
+
+            list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
+            if(STATUS_CODE EQUAL 0)
+                set(ONNXRUNTIME_DOWNLOADED TRUE)
+                break()
+            endif()
+            message(STATUS "Not found: ${CANDIDATE}, trying next candidate...")
+        endforeach()
+
+        if(NOT ONNXRUNTIME_DOWNLOADED)
+            message(FATAL_ERROR "Failed to download ONNX Runtime ${ONNXRUNTIME_VERSION}")
         endif()
-        
+
         message(STATUS "Extracting ONNX Runtime...")
+        file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/onnxruntime-extract")
         file(ARCHIVE_EXTRACT
             INPUT "${CMAKE_BINARY_DIR}/onnxruntime.tgz"
-            DESTINATION "${DEFAULT_DEPENDENCY_ROOT}"
+            DESTINATION "${CMAKE_BINARY_DIR}/onnxruntime-extract"
         )
-        
+
+        file(GLOB ONNXRUNTIME_EXTRACTED LIST_DIRECTORIES true "${CMAKE_BINARY_DIR}/onnxruntime-extract/*")
+        list(LENGTH ONNXRUNTIME_EXTRACTED ONNXRUNTIME_EXTRACTED_COUNT)
+        if(NOT ONNXRUNTIME_EXTRACTED_COUNT EQUAL 1)
+            message(FATAL_ERROR "Unexpected ONNX Runtime archive layout")
+        endif()
+        list(GET ONNXRUNTIME_EXTRACTED 0 ONNXRUNTIME_EXTRACTED_DIR)
+        if(NOT ONNXRUNTIME_EXTRACTED_DIR STREQUAL ONNXRUNTIME_DIR)
+            file(RENAME "${ONNXRUNTIME_EXTRACTED_DIR}" "${ONNXRUNTIME_DIR}")
+        endif()
+        file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/onnxruntime-extract")
+
         file(REMOVE "${CMAKE_BINARY_DIR}/onnxruntime.tgz")
         message(STATUS "ONNX Runtime installed to ${ONNXRUNTIME_DIR}")
     else()

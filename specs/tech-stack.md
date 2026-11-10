@@ -34,8 +34,8 @@ read from `versions.env` by `cmake/versions.cmake`.
 
 | Dependency | Pin | Role |
 |------------|-----|------|
-| [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks) | `v0.8.1` | CV task layer and shared types (`Detection`, `TaskFactory`) |
-| [neuriplo](https://github.com/olibartfast/neuriplo) | `v0.8.0` | Unified inference interface across backends |
+| [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks) | `v0.8.5` | CV task layer and shared types (`Detection`, `TaskFactory`) |
+| [neuriplo](https://github.com/olibartfast/neuriplo) | `v0.11.3` | Unified inference interface across backends |
 | [ByteTrack-cpp](https://github.com/Vertical-Beach/ByteTrack-cpp) | `d43805d` | ByteTrack implementation; the repository publishes no tags |
 
 `neuriplo-tasks` and `neuriplo` are auto-detected as **sibling checkouts**: if
@@ -59,7 +59,7 @@ Selected at configure time with `-DDEFAULT_BACKEND=<backend>`; default in
 | Backend | Setup |
 |---------|-------|
 | `OPENCV_DNN` | None beyond OpenCV |
-| `ONNX_RUNTIME` | Auto-downloads 1.19.2 (linux-x64-gpu) to `$HOME/dependencies/`, or set `ONNX_RUNTIME_DIR` |
+| `ONNX_RUNTIME` | Auto-downloads 1.28.0 (`linux-x64-gpu_cuda13` to `$HOME/dependencies/`, or set `ONNX_RUNTIME_DIR`) |
 | `TENSORRT` | Per [neuriplo](https://github.com/olibartfast/neuriplo#-requirements) |
 | `LIBTORCH` | Per neuriplo |
 | `OPENVINO` | Per neuriplo |

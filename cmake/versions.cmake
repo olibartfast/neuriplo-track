@@ -38,6 +38,10 @@ set(BYTETRACK_VERSION ${BYTETRACK_VERSION} CACHE STRING "ByteTrack library versi
 set(NEURIPLO_TASKS_VERSION ${NEURIPLO_TASKS_VERSION} CACHE STRING "neuriplo-tasks library version")
 set(NEURIPLO_VERSION ${NEURIPLO_VERSION} CACHE STRING "neuriplo library version")
 
+# Inference runtime. Lives here (not hardcoded in CMakeLists.txt) so every
+# consumer — CMake, CI, Docker — reads the same pin.
+set(ONNXRUNTIME_VERSION ${ONNXRUNTIME_VERSION} CACHE STRING "ONNX Runtime version")
+
 # System Dependencies (minimum versions)
 set(OPENCV_MIN_VERSION ${OPENCV_MIN_VERSION} CACHE STRING "Minimum OpenCV version")
 set(GLOG_MIN_VERSION ${GLOG_MIN_VERSION} CACHE STRING "Minimum glog version")
@@ -49,6 +53,7 @@ message(STATUS "=== Project Dependency Versions ===")
 message(STATUS "ByteTrack: ${BYTETRACK_VERSION}")
 message(STATUS "neuriplo-tasks: ${NEURIPLO_TASKS_VERSION}")
 message(STATUS "neuriplo: ${NEURIPLO_VERSION}")
+message(STATUS "ONNX Runtime: ${ONNXRUNTIME_VERSION}")
 message(STATUS "OpenCV (minimum): ${OPENCV_MIN_VERSION}")
 message(STATUS "glog (minimum): ${GLOG_MIN_VERSION}")
 message(STATUS "Eigen3 (minimum): ${EIGEN3_MIN_VERSION}")

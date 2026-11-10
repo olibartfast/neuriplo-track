@@ -26,7 +26,7 @@ runs:
     - name: Install ONNX Runtime
       shell: bash
       run: |
-        ONNXRUNTIME_VERSION=1.19.2
+        ONNXRUNTIME_VERSION="$(grep -E '^ONNXRUNTIME_VERSION=' versions.env | cut -d'"' -f2)"
         ONNXRUNTIME_ROOT="${HOME}/dependencies/onnxruntime-linux-x64-${ONNXRUNTIME_VERSION}"
 
         if [ ! -f "${ONNXRUNTIME_ROOT}/lib/libonnxruntime.so" ]; then

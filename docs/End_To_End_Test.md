@@ -19,8 +19,8 @@ annotated MKV. Adjust paths/models to your own assets.
 | Tracker framework | this repo (`neuriplo-track`) |
 | `neuriplo-tasks` | **v0.5.0** (sibling checkout, `../neuriplo-tasks`) |
 | `neuriplo` | sibling checkout, `../neuriplo` |
-| Inference backend | ONNX Runtime **1.19.2** (GPU build for CUDA EP; CPU build also works) |
-| GPU (optional) | any CUDA-capable NVIDIA GPU + matching CUDA 12 / cuDNN 9 runtime |
+| Inference backend | ONNX Runtime **1.28.0** (GPU build for CUDA EP; CPU build also works) |
+| GPU (optional) | any CUDA-capable NVIDIA GPU + matching CUDA 13 runtime |
 | Eigen | system `libeigen3-dev`, or a header-only install (see step 2) |
 | Build tools | CMake ≥ 3.20, Ninja, C++20 |
 
@@ -35,9 +35,9 @@ EdgeCrafter is a multi-input, RT-DETR-style detector. Its ONNX has two inputs
 # repo root
 REPO=$(pwd)
 
-# ONNX Runtime 1.19.2 — CPU package used to LINK, GPU package used to RUN (same ABI)
-ORT_LINK_DIR=$HOME/path/to/onnxruntime-linux-x64-1.19.2          # has headers + libonnxruntime.so
-ORT_GPU_DIR=$HOME/path/to/onnxruntime-linux-x64-gpu-1.19.2       # CUDA-provider build (optional)
+# ONNX Runtime 1.28.0 — CPU package used to LINK, GPU package used to RUN (same ABI)
+ORT_LINK_DIR=$HOME/path/to/onnxruntime-linux-x64-1.28.0          # has headers + libonnxruntime.so
+ORT_GPU_DIR=$HOME/path/to/onnxruntime-linux-x64-gpu_cuda13-1.28.0  # CUDA-provider build (optional)
 
 # your assets
 ECDET_ONNX=$HOME/path/to/ecdet_s.onnx        # EdgeCrafter detection model
@@ -95,7 +95,7 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
 cmake --build build -j"$(nproc)"
 ```
 
-The binary links `libonnxruntime.so.1` (1.19.2 ABI). The **GPU** package can be swapped in at
+The binary links `libonnxruntime.so.1` (1.28.0 ABI). The **GPU** package can be swapped in at
 runtime via `LD_LIBRARY_PATH` (step 7) to enable the CUDA provider without rebuilding.
 
 Output: `build/app/neuriplo-track`.
